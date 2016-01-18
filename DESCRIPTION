@@ -9,5 +9,7 @@ Maintainer: Sebastian Kranz <sebastian.kranz@uni-ulm.de>
 Description: Tools for RMarkdown
 License: GPL >= 2.0
 Depends:
-  restorepoint, dplyr, stringtools
-
+    restorepoint,
+    dplyr,
+    stringtools
+RoxygenNote: 5.0.0

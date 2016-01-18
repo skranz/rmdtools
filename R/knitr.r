@@ -1,6 +1,7 @@
 #' Knits the rmd txt inside a temporary directory instead of the current wd
 #'
 #' Does not create /figure subfolder in current wd
+#' @export
 knit.rmd.in.temp = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE) {
   owd <- setwd(tempdir())
   on.exit(setwd(owd))

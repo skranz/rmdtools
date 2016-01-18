@@ -1,3 +1,5 @@
+#' cat.whisker params
+#' @export
 cat.whisker.params = function(file=NULL, text=readLines(file,warn = FALSE)) {
   library(codeUtils)
   text = paste0(text, collapse="\n")
@@ -34,6 +36,8 @@ examples.get.whisker.with.type = function() {
   replace.whisker.with.blocks(text, params)
 }
 
+#' select.markdown.blocks
+#' @export
 select.markdown.blocks = function(txt, env=parent.frame(), call.list=NULL) {
   restore.point("select.markdown.blocks")
 
@@ -75,6 +79,7 @@ select.markdown.blocks = function(txt, env=parent.frame(), call.list=NULL) {
   }
 }
 
+
 markdown.blocks.call.list = function(txt) {
   restore.point("markdown.blocks.call.list")
 
@@ -100,6 +105,8 @@ markdown.blocks.call.list = function(txt) {
 
 }
 
+#' replace whiskers
+#' @export
 replace.whiskers <- function(str, env=parent.frame(), signif= getOption("whiskerSignifDigits")
 , round=  getOption("whiskerRoundDigits"), add.params=TRUE, whiskers.call.list=NULL) {
   restore.point("replace.whiskers")

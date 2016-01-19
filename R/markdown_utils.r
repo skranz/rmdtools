@@ -4,10 +4,12 @@
 #' @param chunk.names the list of rmd chunks that shall be removed
 #' @export
 remove.rmd.chunks = function(rmd, chunk.names) {
+  restore.point("remove.rmd.chunks")
+
   df = find.rmd.chunks(rmd)
   rem.rows = unique(unlist(lapply(intersect(df$chunk.name,chunk.names), function (chunk.name) {
-    row = which(df$chunk.name==chunk.name)
-    df$start.row:df$end.row
+    row = which(df$chunk.name==chunk.name)[1]
+    df$start.row[row]:df$end.row[row]
   })))
   if (length(rem.rows)>0) {
     return(rmd[-rem.rows])

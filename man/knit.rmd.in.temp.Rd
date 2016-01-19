@@ -5,7 +5,7 @@
 \title{Knits the rmd txt inside a temporary directory instead of the current wd}
 \usage{
 knit.rmd.in.temp(text, envir = parent.frame(), fragment.only = TRUE,
-  quiet = TRUE)
+  quiet = TRUE, encoding = getOption("encoding"), html.table = TRUE)
 }
 \description{
 Does not create /figure subfolder in current wd

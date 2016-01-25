@@ -1,3 +1,4 @@
+
 #' cat.whisker params
 #' @export
 cat.whisker.params = function(file=NULL, text=readLines(file,warn = FALSE)) {
@@ -36,75 +37,6 @@ examples.get.whisker.with.type = function() {
   replace.whisker.with.blocks(text, params)
 }
 
-#' select.markdown.blocks
-#' @export
-select.markdown.blocks = function(txt, env=parent.frame(), call.list=NULL) {
-  restore.point("select.markdown.blocks")
-
-  #str = sep.lines(str)
-  start = which(str.starts.with(txt,"#<"))
-  end = which(str.starts.with(txt,"#>"))
-
-  if (length(start) != length(end)) {
-    stop(paste0("You open ", length(start), " blocks but close ", length(end), " blocks"))
-  }
-
-  if (length(start)==0) return(txt)
-
-  blocks = match.blocks.start.end(start, end)
-  start_row = start+1
-  end_row = end[blocks[,2]]-1
-  #cbind(start_row, end_row)
-  str_calls = str.right.of(txt[start],"#< ")
-
-  if (is.null(call.list)) {
-    calls = lapply(str_calls, function(str) parse(text=str))
-  } else {
-    calls = call.list[str_calls]
-  }
-  add = sapply(calls, function(call) isTRUE(try(eval(call,envir=env))))
-
-  #add = sapply(calls, function(call) isTRUE(eval(call,envir=env)))
-
-
-  del.rows = unique(unlist(lapply(which(!add),function(ind){
-    start_row[ind]:end_row[ind]
-  })))
-  del.rows = unique(c(start,end,del.rows))
-
-  if (length(del.rows)>0) {
-    return(txt[-del.rows])
-  } else {
-    return(txt)
-  }
-}
-
-
-markdown.blocks.call.list = function(txt) {
-  restore.point("markdown.blocks.call.list")
-
-  if (length(txt)==1) txt = sep.lines(txt)
-  start = which(str.starts.with(txt,"#<"))
-  end = which(str.starts.with(txt,"#>"))
-
-  if (length(start) != length(end)) {
-    stop(paste0("You open ", length(start), " blocks but close ", length(end), " blocks"))
-  }
-
-  if (length(start)==0) return(txt)
-
-  blocks = match.blocks.start.end(start, end)
-  start_row = start+1
-  end_row = end[blocks[,2]]-1
-  #cbind(start_row, end_row)
-  str_calls = str.right.of(txt[start],"#< ")
-  str_calls = unique(str_calls)
-  call.list = lapply(str_calls, function(str) parse(text=str)[[1]])
-  names(call.list) = str_calls
-  call.list
-
-}
-
 #' replace whiskers
 #' @export
 replace.whiskers <- function(str, env=parent.frame(), signif= getOption("whiskerSignifDigits")
@@ -122,13 +54,6 @@ replace.whiskers <- function(str, env=parent.frame(), signif= getOption("whisker
     vals = lapply(s, function(su) {
       res = try(eval(parse(text=su),env))
       if (is(res,"try-error")) res = "`Error`"
-      if (is.numeric(res) & !is.null(signif)) {
-        digits = max(signif,ceiling(log(res+1,10)))
-        res = signif(res, digits)
-      }
-      if (is.numeric(res) & !is.null(round)) {
-        res = round(res, round)
-      }
       res
     })
   # speed up compilation
@@ -137,21 +62,38 @@ replace.whiskers <- function(str, env=parent.frame(), signif= getOption("whisker
     vals = lapply(calls, function(call) {
       res = try(eval(call,env))
       if (is(res,"try-error")) res = "`Error`"
-      if (is.numeric(res) & !is.null(signif)) {
-        digits = max(signif,ceiling(log(res+1,10)))
-        res = signif(res, digits)
-      }
-      if (is.numeric(res) & !is.null(round)) {
-        res = round(res, round)
-      }
       res
     })
   }
+
+  vals = lapply(vals, whisker_print, signif=signif, round=round)
   res = str.replace.at.pos(str, pos$outer, unlist(vals))
   res
 }
 
+#' Print a whisker object
+#' @export
+whisker_print = function(x,...) {
+  UseMethod("whisker_print",x)
+}
 
+#' Need to implement different methods
+#' @export
+whisker_print.default = function(x,...) {
+  as.character(x)
+}
+
+whisker.print.numeric = function(x,round=NULL, signif=NULL...) {
+  res = x
+  if (!is.null(signif)) {
+    digits = max(signif,ceiling(log(res+1,10)))
+    res = signif(res, digits)
+  }
+  if (!is.null(round)) {
+    res = round(res, round)
+  }
+  res
+}
 
 whiskers.call.list = function(str) {
   restore.point("whiskers.call.list")
@@ -194,48 +136,59 @@ replace.whisker.with.blocks = function(str, env=parent.frame()) {
   return(res)
 }
 
-match.blocks.start.end = function(start, end) {
-  restore.point("match.blocks")
+#' Render all knitr chunks in the same way as a whisker
+#'  (taking into some chunk options, like results="asis")
+#' @export
+render.chunks.like.whisker = function(rmd, params=list(), env=parent.frame()) {
+  restore.point("render.chunks.like.whisker")
 
-  end_pos = start_stack = rep(NA, length(start))
-  start_stack_ind = 1
-  start.i = 1
-  end.i= 1
-  start_stack[1] = 1
-  start = c(start, Inf)
-  while (TRUE) {
-    top_ind = start_stack[start_stack_ind]
+  rmd = sep.lines(rmd)
 
-    # Add next start.i to start stack
-    start.i = start.i+1
+  cdf = find.rmd.chunks(rmd)
+  if (NROW(cdf)==0) return(rmd)
 
-    # Try to clear start_stack
-    while (end[end.i]<start[start.i]) {
-
-      end_pos[top_ind] = end.i
-      if (start[top_ind]>end[end.i]) {
-        stop(paste0("A block closes in position (line) ", end[end.i], " but there is no open block."))
-      }
-      start_stack_ind = start_stack_ind-1
-      end.i = end.i+1
-
-      #cat("\ndel start_stack: ", paste0(start_stack[1:start_stack_ind],
-      #"(",start[start_stack[1:start_stack_ind]],")"))
-
-      if (start_stack_ind == 0) break
-
-      top_ind = start_stack[start_stack_ind]
-    }
-
-    if (start.i >= length(start)) break
-
-    start_stack_ind = start_stack_ind+1
-    start_stack[start_stack_ind] = start.i
-    #cat("\nadd start_stack: ", paste0(start_stack[1:start_stack_ind],
-    #  "(",start[start_stack[1:start_stack_ind]],")"))
-
+  if (!is.null(params)) {
+    eenv = as.environment(params)
+    parent.env(eenv)<-env
+  } else {
+    eenv = env
   }
-  cbind(start_ind=seq_along(start[-length(start)]), end_ind=end_pos)
+
+  res = lapply(1:NROW(cdf), function(row) {
+    ch = cdf[row,,drop=FALSE]
+    code = rmd[(ch$start.row+1):(ch$end.row-1)]
+    options = chunk.opt.string.to.list(rmd[ch$start.row], keep.name = FALSE)
+    res = render.chunk.like.whisker(code=code, options=options, env=eenv)
+    res = paste0(res, collapse="\n")
+  })
+  rmd[cdf$start.row] = res
+
+  rm.lines = unlist(lapply(1:NROW(cdf), function(row) {
+    ch = cdf[row,,drop=FALSE]
+    setdiff(ch$start.row:ch$end.row,ch$start.row)
+  }))
+  if (length(rm.lines)>0) {
+    rmd = rmd[-rm.lines]
+  }
+  rmd
+}
+
+
+#' Render a knitr chunk in the same way as a whisker (taking into some chunk options, like results="asis")
+#' @export
+render.chunk.like.whisker = function(code, call=NULL, options=NULL, env=parent.frame()) {
+  restore.point("render.chunk.like.whisker")
+
+
+  if (is.null(call)) {
+    call = parse(text=c("{\n",code,"\n}"))[[1]]
+  }
+
+  val = eval(call,env)
+  if (identical(options$results,"asis"))
+    return(paste0(val,collapse="\n"))
+
+  do.call(whisker_print,c(list(x=val),options))
 }
 
 get.whiskers.with.type = function(text=paste0(readLines(file,warn = FALSE), collapse="\n"), file=NULL) {

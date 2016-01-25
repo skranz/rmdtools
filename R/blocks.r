@@ -37,9 +37,9 @@ find.rmd.blocks = function(txt) {
   data.frame(start=start_row, end=end_row, type=type, arg.str=arg.str,stringsAsFactors = FALSE)
 }
 
-#' replace all given types of rmd blocks
+#' compile all given types of rmd blocks
 #' @export
-replace.rmd.blocks = function(txt, env=parent.frame(), call.list=NULL, block.df = NULL, types=c("note","if"), use.del.rows.na=FALSE, replace.funs=NULL) {
+compile.rmd.blocks = function(txt, to="html", env=parent.frame(), call.list=NULL, block.df = NULL, types=c("if", "note"), use.del.rows.na=FALSE, replace.funs=NULL) {
   restore.point("replace.rmd.blocks")
 
   if (is.null(block.df)) {
@@ -64,7 +64,7 @@ replace.rmd.blocks = function(txt, env=parent.frame(), call.list=NULL, block.df 
 
 #' extract #< if blocks from a rmd txt
 #' @export
-replace.note.blocks = function(txt, env=parent.frame(), call.list=NULL, block.df=NULL, del.rows.na = FALSE) {
+compile.note.blocks.to.html = function(txt, env=parent.frame(), call.list=NULL, block.df=NULL, del.rows.na = FALSE) {
   restore.point("replace.note.blocks")
 
   if (is.null(block.df)) {
@@ -76,7 +76,9 @@ replace.note.blocks = function(txt, env=parent.frame(), call.list=NULL, block.df
   if (NROW(block.df)==0) return(txt)
 
   content = sapply(1:NROW(block.df), function(row) {
-    paste0(txt[(block.df$start+1):(block.df$end-1)], collapse="\n")
+    inner = paste0(txt[(block.df$start+1):(block.df$end-1)], collapse="\n")
+    inner = mark_utf8(inner)
+    compile.rmd(text = inner, params=env,use.blocks = FALSE, use.whiskers=TRUE,set.utf8 = FALSE)
   })
   title = block.df$arg.str
   id.int = sample.int(.Machine$integer.max,NROW(block.df),replace = FALSE)
@@ -84,30 +86,93 @@ replace.note.blocks = function(txt, env=parent.frame(), call.list=NULL, block.df
 
   #shinyBS::bsCollapse(id ="hi", shinyBS::bsCollapsePanel(titel="Title",shiny::HTML("my_content")))
 
-  html = paste0('
-<div class="panel-group sbs-panel-group" data-sbs-multi="FALSE" id="',id,'" role="tablist">
-<div class="panel panel-default" value="content">
-<div class="panel-heading" role="tab" id="heading_cpanel',id.int,'">
-<h4 class="panel-title">
-<a data-toggle="collapse" href="#cpanel',id.int,'" data-parent="#',id,'">
-', content,'
-</a>
-</h4>
-</div>
-<div id="cpanel',id.int,'" class="panel-collapse collapse" role="tabpanel">
-<div class="panel-body">',title,'</div>
-</div>
-</div>
-</div>
-')
+#   html = paste0('
+# <div class="panel-group sbs-panel-group" data-sbs-multi="FALSE" id="',id,'" role="tablist">
+# <div class="panel panel-default" value="content">
+# <div class="panel-heading" role="tab" id="heading_cpanel',id.int,'">
+# <h4 class="panel-title">
+# <a data-toggle="collapse" href="#cpanel',id.int,'" data-parent="#',id,'">
+# ',title ,'
+# </a>
+# </h4>
+# </div>
+# <div id="cpanel',id.int,'" class="panel-collapse collapse" role="tabpanel">
+# <div class="panel-body">\n',content,'\n</div>
+# </div>
+# </div>
+# </div>
+# ')
 
+  html = sapply(seq_along(content), function(i) {
+    ui=shinyBS::bsCollapse(id =id[[i]], shinyBS::bsCollapsePanel(title=title[[i]],shiny::HTML(content)))
+    as.character(ui)
+  })
 
   txt = replace.block.txt(txt, html, block.df, del.rows.na)
   txt
 }
 
+#' extract #< if blocks from a rmd txt
+#' @export
+compile.note.block.to.shiny = function(txt, env=parent.frame(), call.list=NULL, block.df=NULL, del.rows.na = FALSE) {
+  restore.point("replace.note.blocks")
 
-replace.block.txt = function(txt, block.txt, block.df, del.rows.na=FALSE,...) {
+  if (is.null(block.df)) {
+    block.df = find.rmd.blocks(txt)
+  }
+  if (is.null(block.df)) return(txt)
+
+  block.df = block.df[block.df$type=="note",]
+  if (NROW(block.df)==0) return(txt)
+
+  content = sapply(1:NROW(block.df), function(row) {
+    inner = paste0(txt[(block.df$start+1):(block.df$end-1)], collapse="\n")
+    inner = mark_utf8(inner)
+    compile.rmd(text = inner, params=env,use.blocks = FALSE, use.whiskers=TRUE,set.utf8 = FALSE)
+  })
+  title = block.df$arg.str
+  id.int = sample.int(.Machine$integer.max,NROW(block.df),replace = FALSE)
+  id = paste0("collapse_",id.int)
+
+  #shinyBS::bsCollapse(id ="hi", shinyBS::bsCollapsePanel(titel="Title",shiny::HTML("my_content")))
+
+#   html = paste0('
+# <div class="panel-group sbs-panel-group" data-sbs-multi="FALSE" id="',id,'" role="tablist">
+# <div class="panel panel-default" value="content">
+# <div class="panel-heading" role="tab" id="heading_cpanel',id.int,'">
+# <h4 class="panel-title">
+# <a data-toggle="collapse" href="#cpanel',id.int,'" data-parent="#',id,'">
+# ',title ,'
+# </a>
+# </h4>
+# </div>
+# <div id="cpanel',id.int,'" class="panel-collapse collapse" role="tabpanel">
+# <div class="panel-body">\n',content,'\n</div>
+# </div>
+# </div>
+# </div>
+# ')
+
+  html = sapply(seq_along(content), function(i) {
+    ui=shinyBS::bsCollapse(id =id[[i]], shinyBS::bsCollapsePanel(title=title[[i]],shiny::HTML(content)))
+    as.character(ui)
+  })
+
+  txt = replace.blocks.txt(txt, html, block.df, del.rows.na)
+  txt
+}
+
+get.blocks.txt = function(txt, block.df, inner=FALSE) {
+  if (NROW(block.df)==0) return(character(0))
+
+  sapply(1:NROW(block.df), function(row) {
+    paste0(txt[(block.df$start[row]+inner):(block.df$end[row]-inner)], collapse="\n")
+  })
+
+}
+
+
+replace.blocks.txt = function(txt, block.txt, block.df, del.rows.na=FALSE,...) {
   restore.point("replace.block.txt")
 
   if (NROW(block.df)==0) return(txt)

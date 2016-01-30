@@ -1,3 +1,24 @@
+#' Parse a whisker and create meta info
+#' @export
+make.whisker.info = function(txt, add.variables=FALSE) {
+  restore.point("make.whisker.info")
+  if (length(txt)==1) txt = sep.lines(txt)
+  expr = parse(text=txt)
+
+  if (add.variables) {
+    list(
+      expr = expr,
+      vars = find.variables(expr)
+    )
+  } else {
+    list(
+      expr = expr
+    )
+  }
+
+}
+
+
 
 #' cat.whisker params
 #' @export
@@ -39,9 +60,9 @@ examples.get.whisker.with.type = function() {
 
 #' replace whiskers
 #' @export
-replace.whiskers <- function(str, env=parent.frame(), signif= getOption("whiskerSignifDigits")
+eval.whiskers.in.text <- function(str, env=parent.frame(), signif= getOption("whiskerSignifDigits")
 , round=  getOption("whiskerRoundDigits"), add.params=TRUE, whiskers.call.list=NULL) {
-  restore.point("replace.whiskers")
+  restore.point("eval.whiskers.in.text")
 
   if (add.params) {
     env$params = as.list(env)
@@ -136,60 +157,6 @@ replace.whisker.with.blocks = function(str, env=parent.frame()) {
   return(res)
 }
 
-#' Render all knitr chunks in the same way as a whisker
-#'  (taking into some chunk options, like results="asis")
-#' @export
-render.chunks.like.whisker = function(rmd, params=list(), env=parent.frame()) {
-  restore.point("render.chunks.like.whisker")
-
-  rmd = sep.lines(rmd)
-
-  cdf = find.rmd.chunks(rmd)
-  if (NROW(cdf)==0) return(rmd)
-
-  if (!is.null(params)) {
-    eenv = as.environment(params)
-    parent.env(eenv)<-env
-  } else {
-    eenv = env
-  }
-
-  res = lapply(1:NROW(cdf), function(row) {
-    ch = cdf[row,,drop=FALSE]
-    code = rmd[(ch$start.row+1):(ch$end.row-1)]
-    options = chunk.opt.string.to.list(rmd[ch$start.row], keep.name = FALSE)
-    res = render.chunk.like.whisker(code=code, options=options, env=eenv)
-    res = paste0(res, collapse="\n")
-  })
-  rmd[cdf$start.row] = res
-
-  rm.lines = unlist(lapply(1:NROW(cdf), function(row) {
-    ch = cdf[row,,drop=FALSE]
-    setdiff(ch$start.row:ch$end.row,ch$start.row)
-  }))
-  if (length(rm.lines)>0) {
-    rmd = rmd[-rm.lines]
-  }
-  rmd
-}
-
-
-#' Render a knitr chunk in the same way as a whisker (taking into some chunk options, like results="asis")
-#' @export
-render.chunk.like.whisker = function(code, call=NULL, options=NULL, env=parent.frame()) {
-  restore.point("render.chunk.like.whisker")
-
-
-  if (is.null(call)) {
-    call = parse(text=c("{\n",code,"\n}"))[[1]]
-  }
-
-  val = eval(call,env)
-  if (identical(options$results,"asis"))
-    return(paste0(val,collapse="\n"))
-
-  do.call(whisker_print,c(list(x=val),options))
-}
 
 get.whiskers.with.type = function(text=paste0(readLines(file,warn = FALSE), collapse="\n"), file=NULL) {
   library(stringtools)
@@ -212,13 +179,3 @@ get.whiskers.with.type = function(text=paste0(readLines(file,warn = FALSE), coll
   df
 }
 
-
-#' Like paste0 but returns an empty vector if some string is empty
-sc = function(..., sep="", collapse=NULL) {
-  str = list(...)
-  restore.point("str.combine")
-  len = sapply(str,length)
-  if (any(len==0))
-    return(vector("character",0))
-  paste0(...,sep=sep,collapse=collapse)
-}

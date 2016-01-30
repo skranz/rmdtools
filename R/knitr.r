@@ -1,10 +1,43 @@
+#' Knits the rmd txt inside a temporary directory instead of the current wd
+#'
+#' Does not create /figure subfolder in current wd
+#' @export
+knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE, encoding = getOption("encoding"), html.table = TRUE, out.type="html", knit.dir=tempdir()) {
+  restore.point("knit.chunk")
+
+  owd <- setwd(knit.dir)
+  on.exit(setwd(owd))
+
+  #knitr::opts_knit$set(root.dir = owd)
+  if (html.table) {
+    old.printer =.GlobalEnv$knit_print.data.frame
+    .GlobalEnv$knit_print.data.frame = table.knit_print.data.frame
+  }
+
+  md = knitr::knit(text = text, envir = envir, encoding = encoding,
+        quiet = quiet)
+
+  if (html.table) {
+    if (!is.null(old.printer)) {
+      .GlobalEnv$knit_print.data.frame = old.printer
+    } else {
+      suppressWarnings(rm("knit_print.data.frame",envir=.GlobalEnv))
+    }
+  }
+
+  if (out.type !="html") return(md)
+
+  #writeClipboard(html)
+  html = markdown::markdownToHTML(text = md, fragment.only=fragment.only)
+  html
+}
 
 
 #' Knits the rmd txt inside a temporary directory instead of the current wd
 #'
 #' Does not create /figure subfolder in current wd
 #' @export
-knit.rmd.in.temp = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE, encoding = getOption("encoding"), html.table = TRUE) {
+knit.rmd.in.temp = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE, encoding = getOption("encoding"), html.table = TRUE, out.type="html") {
   restore.point("knit.rmd.in.temp")
 
   owd <- setwd(tempdir())
@@ -26,6 +59,8 @@ knit.rmd.in.temp = function(text, envir=parent.frame(), fragment.only=TRUE, quie
       suppressWarnings(rm("knit_print.data.frame",envir=.GlobalEnv))
     }
   }
+
+  if (out.type !="html") return(md)
 
   #writeClipboard(html)
   html = markdown::markdownToHTML(text = md, fragment.only=fragment.only)

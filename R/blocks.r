@@ -9,9 +9,19 @@ examples.find.rmd.blocks = function() {
   #txt = replace.if.blocks(txt=txt)
 }
 
+get.block.types.df = function(types) {
+  specs = lapply(types, get.block.spec)
+  df = data_frame()
+}
+
+get.block.spec = function(type) {
+  do.call(paste0("get.",type,".block.spec"),list())
+}
+
+
 #' Find all rmd blocks that start with a line `#< ...` and end with a line `#>`
 #' @param txt the rmd code, separated into lines
-#' @returns A data.frame with the columns start, end, type, arg.str or NULL if no block was found
+#' @return A data.frame with the columns start, end, type, arg.str or NULL if no block was found
 #' @export
 find.rmd.blocks = function(txt) {
   restore.point("find.rmd.blocks")
@@ -39,18 +49,25 @@ find.rmd.blocks = function(txt) {
 
 #' compile all given types of rmd blocks
 #' @export
-compile.rmd.blocks = function(txt, to="html", env=parent.frame(), call.list=NULL, block.df = NULL, types=c("if", "note"), use.del.rows.na=FALSE, replace.funs=NULL) {
-  restore.point("replace.rmd.blocks")
+eval.rmd.blocks.in.text = function(txt, to="html", env=parent.frame(), call.list=NULL, block.df = NULL, only.types=NULL, ignore.types="if", use.del.rows.na=FALSE, replace.funs=NULL) {
+  restore.point("eval.rmd.blocks.in.text")
 
   if (is.null(block.df)) {
     block.df = find.rmd.blocks(txt)
   }
   if (is.null(block.df)) return(txt)
+  if (!is.null(only.types))
+    block.df = block.df[block.df$type %in% only.types,]
+  if (!is.null(ignore.types))
+    block.df = block.df[!block.df$type %in% ignore.types,]
+
+  if (NROW(block.df)==0) return(txt)
+
 
   for (type in types) {
     fun = replace.funs[[type]]
     if (is.null(fun)) {
-      fun = eval(parse(text=paste0("replace.",type,".blocks")))
+      fun = eval(parse(text=paste0("eval.",type,".block")))
     }
     txt = fun(txt=txt, env=env, call.list=call.list, block.df=block.df, del.rows.na=use.del.rows.na)
     if (!use.del.rows.na)
@@ -61,106 +78,6 @@ compile.rmd.blocks = function(txt, to="html", env=parent.frame(), call.list=NULL
   txt
 }
 
-
-#' extract #< if blocks from a rmd txt
-#' @export
-compile.note.blocks.to.html = function(txt, env=parent.frame(), call.list=NULL, block.df=NULL, del.rows.na = FALSE) {
-  restore.point("replace.note.blocks")
-
-  if (is.null(block.df)) {
-    block.df = find.rmd.blocks(txt)
-  }
-  if (is.null(block.df)) return(txt)
-
-  block.df = block.df[block.df$type=="note",]
-  if (NROW(block.df)==0) return(txt)
-
-  content = sapply(1:NROW(block.df), function(row) {
-    inner = paste0(txt[(block.df$start+1):(block.df$end-1)], collapse="\n")
-    inner = mark_utf8(inner)
-    compile.rmd(text = inner, params=env,use.blocks = FALSE, use.whiskers=TRUE,set.utf8 = FALSE)
-  })
-  title = block.df$arg.str
-  id.int = sample.int(.Machine$integer.max,NROW(block.df),replace = FALSE)
-  id = paste0("collapse_",id.int)
-
-  #shinyBS::bsCollapse(id ="hi", shinyBS::bsCollapsePanel(titel="Title",shiny::HTML("my_content")))
-
-#   html = paste0('
-# <div class="panel-group sbs-panel-group" data-sbs-multi="FALSE" id="',id,'" role="tablist">
-# <div class="panel panel-default" value="content">
-# <div class="panel-heading" role="tab" id="heading_cpanel',id.int,'">
-# <h4 class="panel-title">
-# <a data-toggle="collapse" href="#cpanel',id.int,'" data-parent="#',id,'">
-# ',title ,'
-# </a>
-# </h4>
-# </div>
-# <div id="cpanel',id.int,'" class="panel-collapse collapse" role="tabpanel">
-# <div class="panel-body">\n',content,'\n</div>
-# </div>
-# </div>
-# </div>
-# ')
-
-  html = sapply(seq_along(content), function(i) {
-    ui=shinyBS::bsCollapse(id =id[[i]], shinyBS::bsCollapsePanel(title=title[[i]],shiny::HTML(content)))
-    as.character(ui)
-  })
-
-  txt = replace.block.txt(txt, html, block.df, del.rows.na)
-  txt
-}
-
-#' extract #< if blocks from a rmd txt
-#' @export
-compile.note.block.to.shiny = function(txt, env=parent.frame(), call.list=NULL, block.df=NULL, del.rows.na = FALSE) {
-  restore.point("replace.note.blocks")
-
-  if (is.null(block.df)) {
-    block.df = find.rmd.blocks(txt)
-  }
-  if (is.null(block.df)) return(txt)
-
-  block.df = block.df[block.df$type=="note",]
-  if (NROW(block.df)==0) return(txt)
-
-  content = sapply(1:NROW(block.df), function(row) {
-    inner = paste0(txt[(block.df$start+1):(block.df$end-1)], collapse="\n")
-    inner = mark_utf8(inner)
-    compile.rmd(text = inner, params=env,use.blocks = FALSE, use.whiskers=TRUE,set.utf8 = FALSE)
-  })
-  title = block.df$arg.str
-  id.int = sample.int(.Machine$integer.max,NROW(block.df),replace = FALSE)
-  id = paste0("collapse_",id.int)
-
-  #shinyBS::bsCollapse(id ="hi", shinyBS::bsCollapsePanel(titel="Title",shiny::HTML("my_content")))
-
-#   html = paste0('
-# <div class="panel-group sbs-panel-group" data-sbs-multi="FALSE" id="',id,'" role="tablist">
-# <div class="panel panel-default" value="content">
-# <div class="panel-heading" role="tab" id="heading_cpanel',id.int,'">
-# <h4 class="panel-title">
-# <a data-toggle="collapse" href="#cpanel',id.int,'" data-parent="#',id,'">
-# ',title ,'
-# </a>
-# </h4>
-# </div>
-# <div id="cpanel',id.int,'" class="panel-collapse collapse" role="tabpanel">
-# <div class="panel-body">\n',content,'\n</div>
-# </div>
-# </div>
-# </div>
-# ')
-
-  html = sapply(seq_along(content), function(i) {
-    ui=shinyBS::bsCollapse(id =id[[i]], shinyBS::bsCollapsePanel(title=title[[i]],shiny::HTML(content)))
-    as.character(ui)
-  })
-
-  txt = replace.blocks.txt(txt, html, block.df, del.rows.na)
-  txt
-}
 
 get.blocks.txt = function(txt, block.df, inner=FALSE) {
   if (NROW(block.df)==0) return(character(0))
@@ -195,8 +112,12 @@ replace.blocks.txt = function(txt, block.txt, block.df, del.rows.na=FALSE,...) {
 
 #' extract #< if blocks from a rmd txt
 #' @export
-replace.if.blocks = function(txt, env=parent.frame(), call.list=NULL, block.df=NULL, warn.if.na=TRUE, del.rows.na=FALSE) {
+replace.if.blocks = function(txt, env=parent.frame(), call.list=NULL, block.df=NULL, warn.if.na=TRUE, del.rows.na=FALSE, if.df=NULL) {
   restore.point("replace.if.blocks")
+
+  if (!is.null(if.df)) {
+    return(replace.if.blocks.from.if.df(txt=txt, env=env, warn.if.na=warn.if.na,del.rows.na=del.rows.na, if.df=if.df))
+  }
 
   if (is.null(block.df)) {
     block.df = find.rmd.blocks(txt)
@@ -223,13 +144,46 @@ replace.if.blocks = function(txt, env=parent.frame(), call.list=NULL, block.df=N
     isTRUE(res)
   })
 
-  #add = sapply(calls, function(call) isTRUE(eval(call,envir=env)))
-
-
   del.rows = unique(unlist(lapply(which(!add),function(ind){
     block.df$start[ind]:block.df$end[ind]
   })))
   del.rows = unique(c(del.rows, block.df$start, block.df$end))
+
+  if (length(del.rows)>0) {
+    if (del.rows.na) {
+      txt[del.rows] = NA_character_
+    } else {
+      txt = txt[-del.rows]
+    }
+  }
+  return(txt)
+}
+
+replace.if.blocks.from.if.df = function(txt, env=parent.frame(), warn.if.na=TRUE, del.rows.na=FALSE, if.df=NULL,...) {
+  restore.point("replace.if.blocks.from.if.df")
+
+  if (NROW(if.df)==0) return(txt)
+
+  if (NROW(txt)==1) txt = sep.lines(txt)
+
+  start = match(if.df$head,txt)
+  end = match(if.df$foot, txt)
+  rows = which(!is.na(start))
+  if (NROW(rows)==0) return(txt)
+
+  add = sapply(rows, function(row) {
+    restore.point("replace.if.blocks.add")
+    call = if.df$info[[row]]$cond.call
+    res = (try(eval(call,envir=env)))
+    if ( warn.if.na & !is.logical(res))
+      warning("Could not evaluate condition ", if.df$info[[row]]$cond.str, " to TRUE or FALSE.")
+    isTRUE(res)
+  })
+
+  del.rows = unique(unlist(lapply(which(!add),function(ind){
+    start[rows[ind]]:end[rows[ind]]
+  })))
+  del.rows = unique(c(del.rows, start[rows], end[rows]))
 
   if (length(del.rows)>0) {
     if (del.rows.na) {
@@ -310,4 +264,103 @@ markdown.blocks.call.list = function(txt) {
   names(call.list) = str_calls
   call.list
 
+}
+
+#' Parse the name of an rmd block
+#' @export
+parse.block.args = function(header) {
+  restore.point("parse.block.args")
+
+  str = header
+  tokens = str.split(str,",")
+  str = str.trim(str.right.of(str,"#< "))
+  type = str.left.of(str," ")
+  str = str.right.of(str," ")
+  code = paste0("list(",str,")")
+  li = eval(base::parse(text=code,srcfile=NULL))
+
+  if (length(li)==0) return(list(name=NULL))
+  if (is.null(names(li))) {
+    return(list(type=type,name=li[[1]]))
+  } else if (nchar(names(li)[1]) == 0) {
+    return(c(list(type=type,name=li[[1]]),li[-1]))
+  }
+  li
+}
+
+
+make.block.info = function(txt, type=NULL, arg.str) {
+  restore.point("make.block.info")
+
+  if (is.null(type)) {
+    txt = sep.lines(txt)
+    header = txt[1]
+    type = str.trim(str.between(txt,"#< "," "))
+  }
+
+  fun = eval(parse(text=paste0("make.",type,".block.info")))
+  fun(txt=txt, type=type, arg.str=arg.str)
+}
+
+#' Adapt header and footer of if blocks for output format
+#' and parse already the if condition for faster runtime evaluation
+#'
+#' @export
+adapt.hf.blocks = function(txt, block.df=NULL, out.type="html",only.types=c("if","note"),...) {
+  restore.point("adapt.if.blocks")
+
+  if (is.null(block.df)) {
+    block.df = find.rmd.blocks(txt)
+  }
+  if (!is.null(only.types)) {
+    block.df = block.df[block.df$type %in% only.types,,drop=FALSE]
+  }
+  if (NROW(block.df)==0) {
+    return(list(txt=txt, if.df=NULL))
+  }
+
+  id = paste0(block.df$type,"_",random.string(n=NROW(block.df)))
+
+  if (out.type == "html") {
+    head = paste0("<!-- _START_",id," ", block.df$arg.str, " -->")
+    foot = paste0("<!-- _END_",id, " -->")
+  } else if (out.type == "md" | out.type == "rmd") {
+    head = paste0("#! _START_",id," ", block.df$arg.str)
+    foot = paste0("#! _END_",id)
+  } else {
+    stop(paste0("out.type ", out.type, " is not supported."))
+  }
+  hf = data_frame(
+    id = id,
+    type = block.df$type,
+    head = head,
+    foot = foot,
+    value = vector("list", NROW(block.df)),
+    value.class = rep("", NROW(block.df)),
+    info = lapply(1:NROW(block.df), function(row) {
+      make.block.info(txt = txt[block.df$start[row]:block.df$end[row]], arg.str = block.df$arg.str[row], type=block.df$type[row])
+    })
+  )
+  txt[block.df$start] = head
+  txt[block.df$end] = foot
+
+  list(txt=txt, hf=hf)
+}
+
+
+#' Adapt header and footer of if blocks for output format
+#' and parse already the if condition for faster runtime evaluation
+#'
+#' @export
+adapt.if.blocks = function(txt, block.df=NULL,out.type="html",only.types="if",...) {
+  restore.point("adapt.if.blocks")
+  adapt.hf.blocks(txt=txt, block.df=block.df, out.type=out.type, only.types=only.types)
+}
+
+make.if.block.info = function(txt, arg.str,...) {
+  cond.call = parse(text=arg.str)[[1]]
+  list(
+    cond.str = arg.str,
+    cond.call = cond.call
+  )
 }

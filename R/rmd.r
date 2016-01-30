@@ -1,3 +1,5 @@
+
+
 #' View an extended rmd file
 #' @export
 view.rmd = function(file=NULL, text=readLines(file,warn = FALSE), params=NULL, parent.env=parent.frame(), use.blocks=FALSE, use.whiskers=TRUE, start.line=NULL, set.utf8=TRUE, knit=!chunk.like.whisker, chunk.like.whisker=FALSE) {
@@ -11,16 +13,21 @@ view.rmd = function(file=NULL, text=readLines(file,warn = FALSE), params=NULL, p
   rstudio::viewer(out.file)
 }
 
+examples.compile.rmd = function() {
+  setwd("D:/libraries/rmdtools/test")
+  cr = compile.rmd(file="test.Rmd")
+
+  txt = render.compiled.rmd(cr, params = list(x=10))
+}
 
 #' Main function to compile rmd to html
 #' @export
-compile.rmd = function(file=NULL, text=readLines(file,warn = FALSE), params=NULL, parent.env=parent.frame(), use.blocks=FALSE, use.whiskers=TRUE, start.line=NULL, set.utf8=TRUE, knit=!chunk.like.whisker, chunk.like.whisker=FALSE, out.type = "html", markdown.blocks.call.list=NULL, whiskers.call.list=NULL, fragment.only=TRUE) {
+compile.rmd = function(file=NULL, text=readLines(file,warn = FALSE), params=NULL, parent.env=parent.frame(), if.blocks = c("ph","render", "ignore")[1],  blocks=c("ph","render","ignore")[1], whiskers=c("ph","render","render.as.text", "ignore")[1], chunks=c("ph","knit", "render","ignore")[1], start.line="<!-- START -->", set.utf8=TRUE, out.type = "html", fragment.only=FALSE, whiskers.call.list=NULL, blocks.call.list=NULL, add.info=TRUE) {
 
   restore.point("compile.rmd")
 
   if (set.utf8) {
     Encoding(text) = "UTF8"
-    #text = mark_utf8(text)
   }
 
   # skip lines until start.tag
@@ -38,44 +45,144 @@ compile.rmd = function(file=NULL, text=readLines(file,warn = FALSE), params=NULL
     text = text[(start.line+1):length(text)]
   }
 
-  if (use.blocks & !is.null(params)) {
-    text = sep.lines(text)
-    text = replace.rmd.blocks(text, params, call.list = markdown.blocks.call.list)
+  if.df = hf = ph = NULL
+  ph.li = vector("list",3)
+
+  # Start with if.block eval, since we may skip
+  # several other replacements
+  if (if.blocks == "render") {
+    text = replace.if.blocks(text,env = params,call.list = blocks.call.list,warn.if.na = TRUE)
+  } else if (if.blocks == "ph") {
+    res = adapt.if.blocks(text, env=params)
+    if.df = res$hf
+    text = res$txt
   }
-  if (use.whiskers) {
+
+  # Now proceed with whiskers, since they are not nested
+  if (whiskers == "render.as.text") {
     text = paste0(text, collapse="\n")
-    text = replace.whiskers(text,params, whiskers.call.list=whiskers.call.list)
+    text = eval.whiskers.in.text(text,params, whiskers.call.list=whiskers.call.list)
+  } else if (whiskers != "ignore") {
+    res = rmd.whiskers.to.placeholders(text, add.info=add.info)
+    text = res$txt
+    ph.li[[1]] = res$ph
   }
 
-  if (chunk.like.whisker) {
-    text = render.chunks.like.whisker(rmd=text, params=params, env=parent.env)
-    text = paste0(text, collapse="\n")
+  # Now proceed with chunks
+  if (chunks == "render" | chunks == "ph") {
+    res = rmd.chunks.to.placeholders(text)
+    text = res$txt
+    ph.li[[2]] = res$ph
   }
 
-  if (knit) {
-    if (out.type == "md") {
-      return(text)
-    }
+  block.df = find.rmd.blocks(text)
+  types = unique(block.df$type)
 
+  block.specs = lapply(types, get.block.spec)
+  names(block.specs) = types
+  block.libs = unique(unlist(lapply(block.specs, function(spec) spec$libs)))
+
+  # Now proceed with blocks
+  if (blocks != "ignore") {
+    hf.types = types[sapply(block.specs, function(spec) spec$is.hf)]
+    ph.types = setdiff(types, hf.types)
+
+    res = adapt.hf.blocks(text, block.df=block.df, only.types=hf.types)
+    hf = res$hf
+    text = res$txt
+
+    res = rmd.blocks.to.placeholders(text, add.info=add.info)
+    text = res$txt
+    ph.li[[3]] = res$ph
+  }
+  # Directly render blocks
+  ph = do.call(rbind, ph.li)
+
+
+  # Transform remaining text to out.type
+  if (chunks == "knit") {
     if (!is.null(params)) {
       env = as.environment(params)
       parent.env(env)<-parent.env
     } else {
       env = parent.env
     }
-    html = knit.rmd.in.temp(text=text, quiet=TRUE,envir=env, fragment.only=TRUE)
-    html = gsub("&lt;!&ndash;html_preserve&ndash;&gt;","",html, fixed=TRUE)
-    html = gsub("&lt;!&ndash;/html_preserve&ndash;&gt;","",html, fixed=TRUE)
-  } else {
-    if (out.type == "md") {
-      return(text)
+    text = knit.rmd.in.temp(text=text, quiet=TRUE,envir=env, fragment.only=TRUE, out.type=out.type)
+
+    if (out.type == "html") {
+      text = gsub("&lt;!&ndash;html_preserve&ndash;&gt;","",html, fixed=TRUE)
+      text = gsub("&lt;!&ndash;/html_preserve&ndash;&gt;","",html, fixed=TRUE)
     }
-    # Neccessary to make mathjax work
-    #text =gsub("\\\\","\\\\\\\\",text, fixed=TRUE)
-    html = markdownToHTML(text=text, fragment.only=fragment.only)
+
+  } else if (out.type=="html") {
+    text = markdownToHTML(text=text, fragment.only=fragment.only)
   }
 
-  return(html)
+  body.start = NA
+  if (out.type == "html" & !fragment.only) {
+    text = merge.lines(text)
+    ltext = tolower(text)
+    head.start = str.locate.first(ltext,"<head>",fixed = TRUE)
+    head.end = str.locate.first(ltext,"</head>",fixed = TRUE)
+    head = substring(text, head.start[,2]+1, head.end[,1]-1)
+
+    body.start = str.locate.first(ltext,"<body>",fixed = TRUE)
+    body.end = str.locate.first(ltext,"</body>",fixed = TRUE)
+    body = substring(text, body.start[,2]+1, body.end[,1]-1)
+  } else {
+    body = text
+    head = NULL
+  }
+
+  cr = nlist(
+    head = head,
+    body = body,
+    out.type,
+    if.df,
+    ph,
+    hf,
+    block.specs,
+    block.libs,
+    block.types = types
+  )
+  return(cr)
+}
+
+
+
+render.compiled.rmd = function(cr,txt = cr$body,params,parent.env=global.env(), fragment.only = FALSE, chunks=c("knit","eval")[1], out.type="html") {
+  restore.point("render.compiled.rmd")
+
+  # First replace if df
+  txt = replace.if.blocks(txt,env = params,if.df = cr$if.df)
+
+  txt = merge.lines(txt)
+
+  # Let us search for all placeholders
+  phs = cr$ph$id
+  ph.loc = str.locate.all(txt, pattern=phs,fixed = TRUE)
+  has.ph = sapply(ph.loc, function(loc) NROW(loc)>0)
+  no.val = cr$ph$value.class == "" | cr$ph$value.class == "error"
+
+  env = as.environment(params)
+  if (!is.null(parent.env))
+    parent.env(env) = parent.env
+
+  comp.val = (has.ph & no.val)
+  new.values = lapply(which(comp.val), function(ind) {
+    eval.placeholder(cr$ph[ind,],env=env, chunks=chunks, out.type=cr$out.type)
+  })
+  cr$ph$value[comp.val] = new.values
+  cr$ph$value.class[comp.val] = sapply(new.values, function(val) attr(val, "value.class"))
+
+
+  # Let us search for all hf
+  head.loc = str.locate.first(txt,cr$hf$head, fixed = TRUE)
+  food.loc = str.locate.first(txt,cr$hf$foot, fixed = TRUE)
+
+
+  ph = cr$ph
+
 
 }
 

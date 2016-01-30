@@ -1,106 +1,53 @@
-read.as.utf8 = function(file, sep.lines=TRUE) {
-  text <- readChar(file, file.info(file)$size, useBytes = TRUE)
-  Encoding(text) <- "UTF-8"
-  if (sep.lines) text = strsplit(text,"\n")[[1]]
-  text
-}
 
-example.rmd.blocks.to.placeholder = function() {
+example.rmd.blocks.to.placeholders = function() {
   setwd("D:/libraries/rmdtools")
   txt = read.as.utf8("test.rmd")
 
-  res = rmd.blocks.to.placeholder(txt)
-  res = rmd.whiskers.to.placeholder(txt)
-  res = rmd.chunks.to.placeholder(txt)
-
+  res = set.rmd.placeholders(txt)
   ph = res$ph
   str = res$txt
   writeClipboard(str)
 }
 
-#' Replace chunks with placeholders of the form {{id}}
+#' View an extended rmd file
 #' @export
-rmd.chunks.to.placeholder = function(txt,whisker.prefix="{{", whisker.postfix="}}", del.rows.na=FALSE) {
-  restore.point("rmd.chunks.to.placeholder")
-
-  df = find.rmd.chunks(txt)
-
-  if (NROW(df)==0) {
-    return(list(txt=txt, ph=NULL))
+view.html = function(file=NULL, text=readLines(file,warn = FALSE), browser=rstudio::viewer) {
+  restore.point("view.html")
+  if (is.null(file)) {
+    file <- tempfile(fileext = ".html")
+    writeLines(text, file)
   }
-  rand.postfix = sample.int(.Machine$integer.max, NROW(df))
-  id = paste0("chunk_", df$name,"_",df$start.row,"_",rand.postfix)
-  ph = data.frame(
-    id = id,
-    type = "chunk",
-    form = "chunk",
-    txt = sapply(1:NROW(df), function(row) {
-      paste0(txt[df$start[row]:df$end[row]], collapse="\n")
-    }),
-    stringsAsFactors = FALSE
-  )
 
-  txt = replace.blocks.txt(txt, paste0(whisker.prefix,id, whisker.postfix), df, del.rows.na=del.rows.na)
+  library(shinyEvents)
+  app = eventsApp()
+  app$ui = fluidPage(HTML(text))
+  runEventsApp(app, launch.browser=browser)
 
-  list(txt=txt, ph=ph)
+  #browseURL(paste0('file://',file))
 
+  #browseURL(url = paste0(file))
+  #rstudio::viewer(file)
 }
 
-
-#' Replace whiskers with placeholders of the form {{id}}
+#' A simple html page
 #' @export
-rmd.whiskers.to.placeholder = function(txt) {
-  multi.line = length(txt)>1
-
-  if (multi.line) txt = merge.lines(txt)
-
-  pos = str.blocks.pos(txt,"{{","}}")
-  if (NROW(pos$outer)==0) {
-    txt = sep.lines(txt)
-    return(txt = txt, ph=NULL)
-  }
-  s = substring(txt, pos$inner[,1],pos$inner[,2])
-  rand.postfix = sample.int(.Machine$integer.max, length(s))
-  id = paste0("whisker_", seq_along(s),"_",rand.postfix)
-  ph = data.frame(
-    id = id,
-    type = "whisker",
-    form = "whisker",
-    txt = s,
-    stringsAsFactors = FALSE
-  )
-
-
-  txt = str.replace.at.pos(txt, pos$outer, paste0("{{",id,"}}"))
-
-  txt = sep.lines(txt)
-  list(txt=txt, ph=ph)
-
+simple.html.page = function(head, body) {
+  head = paste0(head, collapse="\n")
+  body = paste0(body, collapse="\n")
+  html = paste0('
+<!DOCTYPE html>
+<!-- template.html -->
+<html>
+<head>
+', head,'
+</head>
+<body>
+', body,'
+</body>
+</html>
+')
+  html
 }
-
-#' Replace blocks with placeholders of the form {{id}}
-#' @export
-rmd.blocks.to.placeholder = function(txt, block.df=NULL, whisker.prefix="{{", whisker.postfix="}}", del.rows.na = FALSE) {
-  restore.point("rmd.blocks.to.placeholder")
-
-  if (is.null(block.df)) {
-    block.df = find.rmd.blocks(txt)
-  }
-  rand.postfix = sample.int(.Machine$integer.max, NROW(block.df))
-  id = paste0("block_", block.df$type,"_",block.df$start,"_",rand.postfix)
-  ph = data.frame(
-    id = id,
-    type = block.df$type,
-    form = "block",
-    txt = get.blocks.txt(txt, block.df, inner=FALSE),
-    stringsAsFactors = FALSE
-  )
-
-  txt = replace.blocks.txt(txt, paste0(whisker.prefix,id, whisker.postfix), block.df, del.rows.na=del.rows.na)
-
-  list(txt=txt, ph=ph)
-}
-
 
 #' Variant of htmltools::htmlTemplate
 #' @export
@@ -139,4 +86,41 @@ html.template = function (file=NULL, html=NULL, params=list(), parent.env=global
       class(result) <- c("html_document", class(result))
   }
   result
+}
+
+inline.dependencies = function (deps,  mustWork = TRUE)
+{
+  restore.point("inline.dependencies")
+
+  txt = sapply(deps, inline.dependency, mustWork = mustWork)
+  paste0(txt, collapse="\n")
+
+}
+
+inline.dependency = function (dependency,  mustWork = TRUE)
+{
+  restore.point("inline.dependency")
+
+  dir <- dependency$src$file
+  if (is.null(dir)) {
+      if (mustWork) {
+          stop("Dependency ", dependency$name, " ", dependency$version,
+              " is not disk-based")
+      }
+      else {
+          return(dependency)
+      }
+  }
+  scripts = sapply(dependency$script, function(file) {
+    paste0(readLines(paste0(dir,"/",file),warn = FALSE), collapse="\n")
+  })
+  styles = sapply(dependency$stylesheet, function(file) {
+    paste0(readLines(paste0(dir,"/",file),warn=FALSE), collapse="\n")
+  })
+  header = paste0(
+    paste0("<script>\n", scripts,"\n</script>", collapse="\n"),
+    paste0("<style>\n", styles,"\n</style>", collapse="\n")
+  )
+  header
+
 }

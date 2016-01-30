@@ -9,6 +9,9 @@ find.rmd.blocks(txt)
 \arguments{
 \item{txt}{the rmd code, separated into lines}
 }
+\value{
+A data.frame with the columns start, end, type, arg.str or NULL if no block was found
+}
 \description{
 Find all rmd blocks that start with a line `#< ...` and end with a line `#>`
 }

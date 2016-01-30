@@ -11,5 +11,8 @@ License: GPL >= 2.0
 Depends:
     restorepoint,
     dplyr,
-    stringtools
+    stringtools,
+    htmltools,
+    codeUtils,
+    markdown
 RoxygenNote: 5.0.0

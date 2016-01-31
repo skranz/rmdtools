@@ -4,7 +4,7 @@
 \alias{make.whisker.info}
 \title{Parse a whisker and create meta info}
 \usage{
-make.whisker.info(txt, add.variables = TRUE)
+make.whisker.info(txt, add.variables = FALSE)
 }
 \description{
 Parse a whisker and create meta info

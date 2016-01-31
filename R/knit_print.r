@@ -13,7 +13,7 @@ table.knit_print.data.frame = function(x, table.max.rows=100, round.digits=8, si
 
     if (html.data.frame) {
       missing.txt = paste0("... only ", MAX.ROW ," of ", NROW(x), " rows  shown  ...")
-      if (output=="html") {
+      if (output=="html" | output=="shiny") {
         h1 = html.table(x[rows,],round.digits=round.digits, signif.digits=signif.digits, col.tooltips=col.tooltips,...)
         html = c(h1, as.character(p(missing.txt)))
       } else {

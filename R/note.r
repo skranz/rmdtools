@@ -26,16 +26,19 @@ get.note.block.spec = function() {
   )
 }
 
-eval.note.block = function(txt,env=parent.frame(), out.type="html",cr=NULL,info=NULL, render.txt = !is.null(cr), ...) {
+eval.note.block = function(txt,env=parent.frame(), out.type="html",cr=NULL,info=NULL, render.txt = !is.null(cr), has.header=TRUE, ...) {
   restore.point("eval.note.block")
   if (is.null(info)) {
     info = make.note.block.info(txt)
   }
   txt = sep.lines(txt)
-  txt = txt[-(1, length(txt))]
+  if (has.header) {
+    txt = txt[-c(1, length(txt))]
+  }
 
+  #render.txt = FALSE
   if (render.txt) {
-    content = render.compiled.rmd(cr=cr,txt=txt, params=env, out.type=out.type)
+    content = render.compiled.rmd(cr=cr,txt=txt, params=env, out.type=out.type, parent.env=NULL)
   } else {
     content = HTML(paste0(txt, collapse="\n"))
   }

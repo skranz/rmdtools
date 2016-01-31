@@ -4,7 +4,7 @@
 \alias{random.string}
 \title{Create n random strings of length nchar each}
 \usage{
-random.string(n = 1, nchar = 10)
+random.string(n = 1, nchar = 14)
 }
 \description{
 Create n random strings of length nchar each

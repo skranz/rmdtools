@@ -2,47 +2,86 @@
 
 #' View an extended rmd file
 #' @export
-view.rmd = function(file=NULL, text=readLines(file,warn = FALSE), params=NULL, parent.env=parent.frame(), use.blocks=FALSE, use.whiskers=TRUE, start.line=NULL, set.utf8=TRUE, knit=!chunk.like.whisker, chunk.like.whisker=FALSE) {
+view.rmd = function(file=NULL, text=readLines(file,warn = FALSE), params=list(), parent.env=parent.frame(), use.blocks=FALSE, use.whiskers=TRUE, start.line="<!-- START -->", end.line = "<!-- END -->", set.utf8=TRUE, knit=!chunk.like.whisker, chunks.like.whisker=FALSE, out.type = "shiny") {
   restore.point("view.rmd")
 
+  if (chunks.like.whisker) {
+    chunks = "ph"
+  } else if (knit) {
+    chunks = "knit"
+  } else {
+    chunks = "ph"
+  }
+  cr = compile.rmd(file=file, text=text, out.type = out.type, start.line=start.line, end.line=end.line, chunks=chunks, fragment.only=TRUE)
 
-  html = compile.rmd(text=text, params=params, parent.env=parent.env, use.blocks=use.blocks, use.whiskers=use.whiskers, start.line = start.line, set.utf8 = set.utf8, knit=knit, chunk.like.whisker = chunk.like.whisker, out.type="html", fragment.only = FALSE)
-
-  out.file <- tempfile(fileext = ".html")
-  writeLines(html, out.file)
-  rstudio::viewer(out.file)
+  ph = cr$ph
+  if (out.type == "shiny") {
+    library(shinyEvents)
+    app = eventsApp()
+    if (chunks.like.whisker) {
+      chunks = "eval"
+    } else {
+      chunks = "knit"
+    }
+    ui = render.compiled.rmd(cr,params = params, parent.env=parent.env, out.type = "shiny", chunks=chunks)
+    app$ui = fluidPage(
+      ui
+    )
+    runEventsApp(app,launch.browser = rstudio::viewer)
+  } else {
+    html = render.compiled.rmd(cr, params = params, fragment.only=FALSE, chunks=chunks)
+    out.file <- tempfile(fileext = ".html")
+    writeLines(html, out.file)
+    rstudio::viewer(out.file)
+  }
+  return(invisible())
 }
 
 examples.compile.rmd = function() {
   setwd("D:/libraries/rmdtools/test")
+  view.rmd("test.Rmd", params=list(x=10))
+
   cr = compile.rmd(file="test.Rmd")
 
   txt = render.compiled.rmd(cr, params = list(x=10))
+  txt
+  ui = render.compiled.rmd(cr,params = list(x=15), out.type = "shiny")
 }
 
 #' Main function to compile rmd to html
 #' @export
-compile.rmd = function(file=NULL, text=readLines(file,warn = FALSE), params=NULL, parent.env=parent.frame(), if.blocks = c("ph","render", "ignore")[1],  blocks=c("ph","render","ignore")[1], whiskers=c("ph","render","render.as.text", "ignore")[1], chunks=c("ph","knit", "render","ignore")[1], start.line="<!-- START -->", set.utf8=TRUE, out.type = "html", fragment.only=FALSE, whiskers.call.list=NULL, blocks.call.list=NULL, add.info=TRUE) {
+compile.rmd = function(file=NULL, text=readLines(file,warn = FALSE), params=NULL, parent.env=parent.frame(), if.blocks = c("ph","render", "ignore")[1],  blocks=c("ph","render","ignore")[1], whiskers=c("ph","render","render.as.text", "ignore")[1], chunks=c("ph","knit", "render","ignore")[1], start.line="<!-- START -->",end.line = "<!-- END -->", set.utf8=TRUE, out.type = "html", fragment.only=FALSE, whiskers.call.list=NULL, blocks.call.list=NULL, add.info=TRUE) {
 
   restore.point("compile.rmd")
 
   if (set.utf8) {
     Encoding(text) = "UTF8"
+    text = mark_utf8(text)
   }
 
   # skip lines until start.tag
   offset = 0
   if (is.character(start.line)) {
-    rows = which(text==start.line)
+    rows = which(str.trim(text)==start.line)
     if (length(rows)>0) {
-      start.line = rows[1]
+      start.line = rows[1]+1
     } else {
       start.line = NULL
     }
   }
+  if (is.character(end.line)) {
+    rows = which(str.trim(text)==end.line)
+    if (length(rows)>0) {
+      end.line = rows[1]-1
+    } else {
+      end.line = length(text)
+    }
+  }
 
-  if (!is.null(start.line)) {
-    text = text[(start.line+1):length(text)]
+  if (!is.null(start.line) | !is.null(end.line)) {
+    if (is.null(start.line)) start.line = 1
+    if (is.null(end.line)) end.line = length(text)
+    text = text[start.line:end.line]
   }
 
   if.df = hf = ph = NULL
@@ -107,19 +146,19 @@ compile.rmd = function(file=NULL, text=readLines(file,warn = FALSE), params=NULL
     } else {
       env = parent.env
     }
-    text = knit.rmd.in.temp(text=text, quiet=TRUE,envir=env, fragment.only=TRUE, out.type=out.type)
+    text = knit.rmd.in.temp(text=text, quiet=TRUE,envir=env, fragment.only=fragment.only, out.type=out.type)
 
-    if (out.type == "html") {
-      text = gsub("&lt;!&ndash;html_preserve&ndash;&gt;","",html, fixed=TRUE)
-      text = gsub("&lt;!&ndash;/html_preserve&ndash;&gt;","",html, fixed=TRUE)
+    if (out.type == "html" | out.type == "shiny") {
+      text = gsub("&lt;!&ndash;html_preserve&ndash;&gt;","",text, fixed=TRUE)
+      text = gsub("&lt;!&ndash;/html_preserve&ndash;&gt;","",text, fixed=TRUE)
     }
 
-  } else if (out.type=="html") {
+  } else if (out.type=="html" | out.type == "shiny") {
     text = markdownToHTML(text=text, fragment.only=fragment.only)
   }
 
   body.start = NA
-  if (out.type == "html" & !fragment.only) {
+  if ( (out.type == "html" | out.type == "shiny") & !fragment.only) {
     text = merge.lines(text)
     ltext = tolower(text)
     head.start = str.locate.first(ltext,"<head>",fixed = TRUE)
@@ -150,7 +189,7 @@ compile.rmd = function(file=NULL, text=readLines(file,warn = FALSE), params=NULL
 
 
 
-render.compiled.rmd = function(cr,txt = cr$body,params,parent.env=global.env(), fragment.only = FALSE, chunks=c("knit","eval")[1], out.type="html") {
+render.compiled.rmd = function(cr,txt = cr$body,params=list(),parent.env=globalenv(), fragment.only = FALSE, chunks=c("knit","eval")[1], out.type="html") {
   restore.point("render.compiled.rmd")
 
   # First replace if df
@@ -161,29 +200,67 @@ render.compiled.rmd = function(cr,txt = cr$body,params,parent.env=global.env(), 
   # Let us search for all placeholders
   phs = cr$ph$id
   ph.loc = str.locate.all(txt, pattern=phs,fixed = TRUE)
-  has.ph = sapply(ph.loc, function(loc) NROW(loc)>0)
-  no.val = cr$ph$value.class == "" | cr$ph$value.class == "error"
 
-  env = as.environment(params)
-  if (!is.null(parent.env))
-    parent.env(env) = parent.env
+  if (length(ph.loc)>0) {
+    has.ph = sapply(ph.loc, function(loc) NROW(loc)>0)
 
-  comp.val = (has.ph & no.val)
-  new.values = lapply(which(comp.val), function(ind) {
-    eval.placeholder(cr$ph[ind,],env=env, chunks=chunks, out.type=cr$out.type)
-  })
-  cr$ph$value[comp.val] = new.values
-  cr$ph$value.class[comp.val] = sapply(new.values, function(val) attr(val, "value.class"))
+    # Need to think of how to deal with value.class
+    #no.val = cr$ph$value.class == "" | cr$ph$value.class == "error"
+    no.val = rep(TRUE, length(phs))
+
+    env = as.environment(params)
+    if (!is.null(parent.env))
+      parent.env(env) = parent.env
+
+    comp.val = ph.comp.val = (has.ph & no.val)
+    ind = 1
+    new.values = lapply(which(comp.val), function(ind) {
+      restore.point("inner.ph")
+      val = eval.placeholder(cr$ph[ind,],env=env, chunks=chunks, out.type=cr$out.type, cr=cr)
+      render.value(val, out.type=out.type)
+    })
+    cr$ph$value[comp.val] = new.values
+    #cr$ph$value.class[comp.val] = sapply(new.values, function(val) attr(val, "value.class"))
+  }
 
 
   # Let us search for all hf
   head.loc = str.locate.first(txt,cr$hf$head, fixed = TRUE)
-  food.loc = str.locate.first(txt,cr$hf$foot, fixed = TRUE)
+  foot.loc = str.locate.first(txt,cr$hf$foot, fixed = TRUE)
+
+  comp.val = !is.na(head.loc[,1])
+  new.values = lapply(which(comp.val), function(ind) {
+    val = eval.hf(txt = substring(txt, head.loc[ind,2]+1,foot.loc[ind,1]-1 ), cr$hf[ind,],env=env, out.type=cr$out.type, cr=cr)
+    render.value(val, out.type=out.type)
+  })
+  cr$hf$value[comp.val] = new.values
+
+  # replace hf with whiskers
+  start = head.loc[comp.val,1]
+  end = foot.loc[comp.val,2]
 
 
-  ph = cr$ph
+  if (out.type == "shiny") {
+    # transform to a shiny tag.list
+    # replace hf by whisker with id
+    if (length(start)>0) {
+      txt = str.replace.at.pos(txt,pos = cbind(start,end),new = paste0("{{",cr$hf$id[comp.val],"}}"))
 
+    }
+    vals = c(cr$ph$value,cr$hf$value)
+    li = whiskered.html.to.list(txt, vals)
+    return(tagList(li))
+  } else {
+    # transform to text
+    if (length(start)>0) {
+      txt = str.replace.at.pos(txt,pos = cbind(start,end),new = cr$hf$value[comp.val])
+    }
+    if (length(which(ph.comp.val))>0) {
+      txt = replace.whiskers(txt,values=cr$ph$value[ph.comp.val])
+    }
+  }
 
+  txt
 }
 
 #' Scan all used block and whisker parameters in an .rmd file
@@ -214,7 +291,9 @@ cat.rmd.params = function(file=NULL, text=readLines(file,warn = FALSE), use.bloc
   #cbind(start_row, end_row)
   block.code = str.right.of(text[start],"#< ")
   block.calls = lapply(block.code, function(str) {
-    res = parse(text=str)[[1]]
+    str = str.right.of(str," ")
+    res = try(parse(text=str)[[1]])
+    if (is(res,"try-error")) return(NULL)
     res
   })
 
@@ -231,4 +310,75 @@ cat.rmd.params = function(file=NULL, text=readLines(file,warn = FALSE), use.bloc
   cat(str)
 }
 
+render.value = function(val, out.type="html",...) {
+  restore.point("render.value")
 
+  if (out.type == "shiny") {
+    if (is.list(val) | is(val,"shiny.stag")) {
+      return(val)
+    }
+    if (is.character(val)) return(HTML(val))
+    if (is.data.frame(val)) {
+      return(table.knit_print.data.frame(val,...))
+    }
+    return(knit_print(val))
+  }
+
+  if (is(val,"shiny.tag.list")) {
+    children = lapply(val, render.value,out.type=out.type,...)
+    val = paste0(children, collapse="\n")
+  }
+
+  if (is.character(val)) {
+    return(val)
+  }
+  if (is.data.frame(val)) {
+    return(table.knit_print.data.frame(val,...))
+  }
+  knit_print(val)
+}
+
+whiskered.html.to.list = function(txt, values, transform.txt.fun=HTML) {
+  restore.point("whiskered.txt.to.list")
+  whiskered.txt.to.list(txt,values,transform.txt.fun)
+}
+
+
+whiskered.txt.to.list = function(txt, values, transform.txt.fun=NULL) {
+  restore.point("whiskered.txt.to.list")
+
+  if (length(values)==0) {
+    if (!is.null(transform.txt.fun))
+      return(list(transform.txt.fun(txt)))
+    list(txt)
+  }
+
+  pieces <- strsplit(txt, "{{", fixed = TRUE)[[1]]
+  pieces <- strsplit(pieces, "}}", fixed = TRUE)
+  if (length(pieces[[1]]) != 1) {
+      stop("Mismatched {{ and }} in whiskered txt.")
+  }
+  lapply(pieces[-1], function(x) {
+      if (length(x) != 2) {
+          stop("Mismatched {{ and }} in whiskered txt.")
+      }
+  })
+  if (!is.null(transform.txt.fun))
+    pieces[[1]] <- transform.txt.fun(pieces[[1]])
+
+  pieces[-1] <- lapply(pieces[-1], function(piece) {
+    restore.point("inner7z43r4hr")
+
+    str = piece[[2]]
+    if (!is.null(transform.txt.fun))
+      str = transform.txt.fun(str)
+
+    if (is.null(values[[piece[1]]])) {
+      warning(paste0("No value for whisker ", piece[1]))
+      #stop()
+    }
+
+    list(values[[piece[1]]],str)
+  })
+  pieces
+}

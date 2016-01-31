@@ -321,30 +321,42 @@ adapt.hf.blocks = function(txt, block.df=NULL, out.type="html",only.types=c("if"
 
   id = paste0(block.df$type,"_",random.string(n=NROW(block.df)))
 
-  if (out.type == "html") {
-    head = paste0("<!-- _START_",id," ", block.df$arg.str, " -->")
-    foot = paste0("<!-- _END_",id, " -->")
-  } else if (out.type == "md" | out.type == "rmd") {
-    head = paste0("#! _START_",id," ", block.df$arg.str)
-    foot = paste0("#! _END_",id)
-  } else {
-    stop(paste0("out.type ", out.type, " is not supported."))
-  }
+  head = paste0("<!-- _START_",id," ", block.df$arg.str, " -->")
+  foot = paste0("<!-- _END_",id, " -->")
+
   hf = data_frame(
     id = id,
     type = block.df$type,
     head = head,
     foot = foot,
     value = vector("list", NROW(block.df)),
-    value.class = rep("", NROW(block.df)),
+    #value.class = rep("", NROW(block.df)),
     info = lapply(1:NROW(block.df), function(row) {
       make.block.info(txt = txt[block.df$start[row]:block.df$end[row]], arg.str = block.df$arg.str[row], type=block.df$type[row])
     })
   )
+  names(hf$value) = hf$id
   txt[block.df$start] = head
   txt[block.df$end] = foot
 
   list(txt=txt, hf=hf)
+}
+
+
+eval.hf = function(txt, hf, env = parent.frame(), dir=getwd(),out.type="html",cr=NULL, ...) {
+  restore.point("eval.hf")
+
+  fun = eval(parse(text=paste0("eval.", hf$type,".block")))
+  res = fun(txt=txt,envir=env,out.type=out.type,chunk=chunk, info=hf$info[[1]], cr=cr, has.header=FALSE)
+
+#   if (is(res,"try-error")) {
+#     value = paste0("`Error when evaluating ", ph$type, " ", ph$txt, ":\n\n", as.character(res),"`")
+#     attr(value,"value.class") = "error"
+#   } else {
+#     value = res
+#     attr(value,"value.class") = class(value)[1]
+#   }
+  value
 }
 
 

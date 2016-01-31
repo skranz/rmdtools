@@ -2,7 +2,7 @@
 % Please edit documentation in R/whisker.r
 \name{eval.whiskers.in.text}
 \alias{eval.whiskers.in.text}
-\title{replace whiskers}
+\title{evaluate whiskers and replace them in the text}
 \usage{
 eval.whiskers.in.text(str, env = parent.frame(),
   signif = getOption("whiskerSignifDigits"),
@@ -10,6 +10,6 @@ eval.whiskers.in.text(str, env = parent.frame(),
   whiskers.call.list = NULL)
 }
 \description{
-replace whiskers
+evaluate whiskers and replace them in the text
 }
 

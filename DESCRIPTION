@@ -14,5 +14,6 @@ Depends:
     stringtools,
     htmltools,
     codeUtils,
-    markdown
+    markdown,
+    knitr
 RoxygenNote: 5.0.0

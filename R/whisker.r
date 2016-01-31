@@ -58,7 +58,23 @@ examples.get.whisker.with.type = function() {
   replace.whisker.with.blocks(text, params)
 }
 
-#' replace whiskers
+#' simply replace whiskers using a list of values
+#' @export
+replace.whiskers <- function(str, values) {
+  restore.point("replace.whiskers")
+  values = as.list(values)
+  pos = str.blocks.pos(str,"{{","}}")
+  if (NROW(pos$outer)==0) return(str)
+  s = substring(str, pos$inner[,1],pos$inner[,2])
+  unknown = setdiff(s, names(values))
+  values[unknown] = as.list(paste0("{{",unknown,"}}"))
+  vals = sapply(values[s], function(val) paste0(as.character(val), collapse="\n"))
+  res = str.replace.at.pos(str, pos$outer, vals)
+  res
+}
+
+
+#' evaluate whiskers and replace them in the text
 #' @export
 eval.whiskers.in.text <- function(str, env=parent.frame(), signif= getOption("whiskerSignifDigits")
 , round=  getOption("whiskerRoundDigits"), add.params=TRUE, whiskers.call.list=NULL) {

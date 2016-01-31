@@ -7,24 +7,24 @@ make.placeholder.info = function(txt, type, form) {
   stop(paste0("unknown placeholder form: ", form))
 }
 
-eval.placeholder = function(ph, env = parent.frame(), chunk="knit", dir=getwd(),out.type="html",cr=NULL, ...) {
+eval.placeholder = function(ph, env = parent.frame(), chunks="knit", dir=getwd(),out.type="html",cr=NULL, ...) {
   restore.point("eval.placeholder")
 
-  if (ph$type == "chunk" & chunk=="knit") {
+  if (ph$type == "chunk" & chunks=="knit") {
     res = try(knit.chunk(ph$txt,envir=env, knit.dir=dir,out.type=out.type))
   } else if (ph$form == "block") {
-    fun = eval(parse(text=paste0("eval.", ph$type,"block")))
-    res = fun(txt=ph$txt,envir=env,out.type=out.type,chunk=chunk, info=ph$info, cr=cr)
+    fun = eval(parse(text=paste0("eval.", ph$type,".block")))
+    res = fun(txt=ph$txt,envir=env,out.type=out.type,chunk=chunk, info=ph$info[[1]], cr=cr)
   } else {
     res = try(eval(ph$info[[1]]$expr, env), silent=TRUE)
   }
 
   if (is(res,"try-error")) {
     value = paste0("`Error when evaluating ", ph$type, " ", ph$txt, ":\n\n", as.character(res),"`")
-    attr(value,"value.class") = "error"
+    #attr(value,"value.class") = "character"
   } else {
     value = res
-    attr(value,"value.class") = class(value)[1]
+    #attr(value,"value.class") = class(value)[1]
   }
   value
 }
@@ -63,7 +63,7 @@ set.rmd.placeholders = function(txt,whisker.prefix="{{", whisker.postfix="}}", c
 
 #' Replace chunks with placeholderss of the form {{id}}
 #' @export
-rmd.chunks.to.placeholders = function(txt,whisker.prefix="{{", whisker.postfix="}}", del.rows.na=FALSE, add.info=TRUE) {
+rmd.chunks.to.placeholders = function(txt,whisker.prefix="{{", whisker.postfix="}}", del.rows.na=FALSE, add.info=TRUE, id=NULL) {
   restore.point("rmd.chunks.to.placeholders")
 
   df = find.rmd.chunks(txt)
@@ -88,9 +88,10 @@ rmd.chunks.to.placeholders = function(txt,whisker.prefix="{{", whisker.postfix="
     info = lapply(1:NROW(df), function(row) {
       make.chunk.info(txt = chunk.txt[row],id=id[row])
     }),
-    value = vector("list",NROW(df)),
-    value.class = ""
+    #value.class = "",
+    value = vector("list",NROW(df))
   )
+  names(ph$value) = ph$id
 
   txt = replace.blocks.txt(txt, paste0(whisker.prefix,id, whisker.postfix), df, del.rows.na=del.rows.na)
 
@@ -112,7 +113,7 @@ rmd.whiskers.to.placeholders = function(txt, whisker.prefix="{{", whisker.postfi
   pos = str.blocks.pos(txt,"{{","}}")
   if (NROW(pos$outer)==0) {
     txt = sep.lines(txt)
-    return(txt = txt, ph=NULL)
+    return(list(txt = txt, ph=NULL))
   }
   s = substring(txt, pos$inner[,1],pos$inner[,2])
   id = paste0("whisker_", seq_along(s),"_",random.string(length(s),nchar=12))
@@ -122,9 +123,10 @@ rmd.whiskers.to.placeholders = function(txt, whisker.prefix="{{", whisker.postfi
     form = "whisker",
     txt = s,
     info = lapply(s, make.whisker.info),
-    value = vector("list",NROW(df)),
-    value.class = ""
+    #value.class = "",
+    value = vector("list",NROW(df))
   )
+  names(ph$value) = ph$id
 
   txt = str.replace.at.pos(txt, pos$outer, paste0(whisker.prefix,id,whisker.postfix))
 
@@ -164,9 +166,11 @@ rmd.blocks.to.placeholders = function(txt, block.df=NULL, whisker.prefix="{{", w
     info = lapply(1:NROW(ph), function(row) {
       make.block.info(txt = ph$txt[row],type=ph$type[row])
     }),
-    value = vector("list",NROW(df)),
-    value.class = ""
+    #value.class = "",
+    value = vector("list",NROW(df))
   )
+  names(ph$value) = ph$id
+
   txt = replace.blocks.txt(txt, paste0(whisker.prefix,id, whisker.postfix), block.df, del.rows.na=del.rows.na)
 
   list(txt=txt, ph=ph)

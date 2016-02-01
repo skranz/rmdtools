@@ -5,6 +5,10 @@
 knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE, encoding = getOption("encoding"), html.table = TRUE, out.type="html", knit.dir=tempdir()) {
   restore.point("knit.chunk")
 
+  if (is.list(envir)) {
+    envir =list2env(envir)
+    parent.env(envir) = globalenv()
+  }
   owd <- setwd(knit.dir)
   on.exit(setwd(owd))
 
@@ -39,6 +43,11 @@ knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE
 #' @export
 knit.rmd.in.temp = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE, encoding = getOption("encoding"), html.table = TRUE, out.type="html") {
   restore.point("knit.rmd.in.temp")
+
+  if (is.list(envir)) {
+    envir =list2env(envir)
+    parent.env(envir) = globalenv()
+  }
 
   owd <- setwd(tempdir())
   on.exit(setwd(owd))

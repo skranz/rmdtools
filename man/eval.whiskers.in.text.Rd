@@ -4,7 +4,7 @@
 \alias{eval.whiskers.in.text}
 \title{evaluate whiskers and replace them in the text}
 \usage{
-eval.whiskers.in.text(str, env = parent.frame(),
+eval.whiskers.in.text(str, envir = parent.frame(),
   signif = getOption("whiskerSignifDigits"),
   round = getOption("whiskerRoundDigits"), add.params = TRUE,
   whiskers.call.list = NULL)

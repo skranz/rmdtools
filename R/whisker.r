@@ -76,12 +76,12 @@ replace.whiskers <- function(str, values) {
 
 #' evaluate whiskers and replace them in the text
 #' @export
-eval.whiskers.in.text <- function(str, env=parent.frame(), signif= getOption("whiskerSignifDigits")
+eval.whiskers.in.text <- function(str, envir=parent.frame(), signif= getOption("whiskerSignifDigits")
 , round=  getOption("whiskerRoundDigits"), add.params=TRUE, whiskers.call.list=NULL) {
   restore.point("eval.whiskers.in.text")
 
   if (add.params) {
-    env$params = as.list(env)
+    envir$params = as.list(envir)
   }
   pos = str.blocks.pos(str,"{{","}}")
   if (NROW(pos$outer)==0) return(str)
@@ -89,7 +89,7 @@ eval.whiskers.in.text <- function(str, env=parent.frame(), signif= getOption("wh
 
   if (is.null(whiskers.call.list)) {
     vals = lapply(s, function(su) {
-      res = try(eval(parse(text=su),env))
+      res = try(eval(parse(text=su),envir))
       if (is(res,"try-error")) res = "`Error`"
       res
     })
@@ -97,7 +97,7 @@ eval.whiskers.in.text <- function(str, env=parent.frame(), signif= getOption("wh
   } else {
     calls = whiskers.call.list[s]
     vals = lapply(calls, function(call) {
-      res = try(eval(call,env))
+      res = try(eval(call,envir))
       if (is(res,"try-error")) res = "`Error`"
       res
     })
@@ -147,7 +147,7 @@ whiskers.call.list = function(str) {
   calls
 }
 
-replace.whisker.with.blocks = function(str, env=parent.frame()) {
+replace.whisker.with.blocks = function(str, envir=parent.frame()) {
   restore.point("replace.whisker.with.blocks")
 
   pos = str.blocks.pos(str,"{{","}}")
@@ -159,7 +159,7 @@ replace.whisker.with.blocks = function(str, env=parent.frame()) {
 
   rows = which(!blocks)
   vals = lapply(s[rows], function(su) {
-    res = try(eval(parse(text=su),env))
+    res = try(eval(parse(text=su),envir))
     if (is(res,"try-error")) res = "`Error`"
     res
   })
@@ -167,7 +167,7 @@ replace.whisker.with.blocks = function(str, env=parent.frame()) {
 
   # render blocks with default function
   if (sum(blocks)>0) {
-    res = whisker::whisker.render(res,env)
+    res = whisker::whisker.render(res,envir)
   }
 
   return(res)

@@ -4,7 +4,7 @@
 \alias{compile.note.block.to.html}
 \title{extract #< if blocks from a rmd txt}
 \usage{
-compile.note.block.to.html(txt, env = parent.frame(), info = NULL)
+compile.note.block.to.html(txt, envir = parent.frame(), info = NULL)
 }
 \description{
 extract #< if blocks from a rmd txt

@@ -2,17 +2,10 @@
 
 #' View an extended rmd file
 #' @export
-view.rmd = function(file=NULL, text=readLines(file,warn = FALSE), params=list(), parent.env=parent.frame(), use.blocks=FALSE, use.whiskers=TRUE, start.line="<!-- START -->", end.line = "<!-- END -->", set.utf8=TRUE, knit=!chunk.like.whisker, chunks.like.whisker=FALSE, out.type = "shiny") {
+view.rmd = function(file=NULL, text=readLines(file,warn = FALSE), envir=list(), use.blocks=FALSE, use.whiskers=TRUE, start.line="<!-- START -->", end.line = "<!-- END -->", set.utf8=TRUE, knit=!chunks.like.whisker, chunks.like.whisker=FALSE, out.type = "shiny") {
   restore.point("view.rmd")
 
-  if (chunks.like.whisker) {
-    chunks = "ph"
-  } else if (knit) {
-    chunks = "knit"
-  } else {
-    chunks = "ph"
-  }
-  cr = compile.rmd(file=file, text=text, out.type = out.type, start.line=start.line, end.line=end.line, chunks=chunks, fragment.only=TRUE)
+  cr = compile.rmd(file=file, text=text, envir=envir, out.type = out.type, start.line=start.line, end.line=end.line, chunks="ph", fragment.only=TRUE)
 
   ph = cr$ph
   if (out.type == "shiny") {
@@ -23,13 +16,13 @@ view.rmd = function(file=NULL, text=readLines(file,warn = FALSE), params=list(),
     } else {
       chunks = "knit"
     }
-    ui = render.compiled.rmd(cr,params = params, parent.env=parent.env, out.type = "shiny", chunks=chunks)
+    ui = render.compiled.rmd(cr,envir=envir, out.type = "shiny", chunks=chunks)
     app$ui = fluidPage(
       ui
     )
     runEventsApp(app,launch.browser = rstudio::viewer)
   } else {
-    html = render.compiled.rmd(cr, params = params, fragment.only=FALSE, chunks=chunks)
+    html = render.compiled.rmd(cr,envir=envir,fragment.only=FALSE, chunks=chunks)
     out.file <- tempfile(fileext = ".html")
     writeLines(html, out.file)
     rstudio::viewer(out.file)
@@ -39,18 +32,18 @@ view.rmd = function(file=NULL, text=readLines(file,warn = FALSE), params=list(),
 
 examples.compile.rmd = function() {
   setwd("D:/libraries/rmdtools/test")
-  view.rmd("test.Rmd", params=list(x=10))
+  view.rmd("test.Rmd", envir=list(x=10))
 
   cr = compile.rmd(file="test.Rmd")
 
-  txt = render.compiled.rmd(cr, params = list(x=10))
+  txt = render.compiled.rmd(cr, envir = list(x=10))
   txt
-  ui = render.compiled.rmd(cr,params = list(x=15), out.type = "shiny")
+  ui = render.compiled.rmd(cr,envir = list(x=15), out.type = "shiny")
 }
 
 #' Main function to compile rmd to html
 #' @export
-compile.rmd = function(file=NULL, text=readLines(file,warn = FALSE), params=NULL, parent.env=parent.frame(), if.blocks = c("ph","render", "ignore")[1],  blocks=c("ph","render","ignore")[1], whiskers=c("ph","render","render.as.text", "ignore")[1], chunks=c("ph","knit", "render","ignore")[1], start.line="<!-- START -->",end.line = "<!-- END -->", set.utf8=TRUE, out.type = "html", fragment.only=FALSE, whiskers.call.list=NULL, blocks.call.list=NULL, add.info=TRUE) {
+compile.rmd = function(file=NULL, text=readLines(file,warn = FALSE), envir=list(), if.blocks = c("ph","render", "ignore")[1],  blocks=c("ph","render","ignore")[1], whiskers=c("ph","render","render.as.text", "ignore")[1], chunks=c("ph","knit", "render","ignore")[1], start.line="<!-- START -->",end.line = "<!-- END -->", set.utf8=TRUE, out.type = "html", fragment.only=FALSE, whiskers.call.list=NULL, blocks.call.list=NULL, add.info=TRUE) {
 
   restore.point("compile.rmd")
 
@@ -89,10 +82,11 @@ compile.rmd = function(file=NULL, text=readLines(file,warn = FALSE), params=NULL
 
   # Start with if.block eval, since we may skip
   # several other replacements
+
   if (if.blocks == "render") {
-    text = replace.if.blocks(text,env = params,call.list = blocks.call.list,warn.if.na = TRUE)
+    text = replace.if.blocks(text,envir = envir,call.list = blocks.call.list,warn.if.na = TRUE)
   } else if (if.blocks == "ph") {
-    res = adapt.if.blocks(text, env=params)
+    res = adapt.if.blocks(text, envir=envir)
     if.df = res$hf
     text = res$txt
   }
@@ -100,7 +94,7 @@ compile.rmd = function(file=NULL, text=readLines(file,warn = FALSE), params=NULL
   # Now proceed with whiskers, since they are not nested
   if (whiskers == "render.as.text") {
     text = paste0(text, collapse="\n")
-    text = eval.whiskers.in.text(text,params, whiskers.call.list=whiskers.call.list)
+    text = eval.whiskers.in.text(text,envir=envir, whiskers.call.list=whiskers.call.list)
   } else if (whiskers != "ignore") {
     res = rmd.whiskers.to.placeholders(text, add.info=add.info)
     text = res$txt
@@ -140,13 +134,7 @@ compile.rmd = function(file=NULL, text=readLines(file,warn = FALSE), params=NULL
 
   # Transform remaining text to out.type
   if (chunks == "knit") {
-    if (!is.null(params)) {
-      env = as.environment(params)
-      parent.env(env)<-parent.env
-    } else {
-      env = parent.env
-    }
-    text = knit.rmd.in.temp(text=text, quiet=TRUE,envir=env, fragment.only=fragment.only, out.type=out.type)
+    text = knit.rmd.in.temp(text=text, quiet=TRUE,envir=envir, fragment.only=fragment.only, out.type=out.type)
 
     if (out.type == "html" | out.type == "shiny") {
       text = gsub("&lt;!&ndash;html_preserve&ndash;&gt;","",text, fixed=TRUE)
@@ -189,11 +177,11 @@ compile.rmd = function(file=NULL, text=readLines(file,warn = FALSE), params=NULL
 
 
 
-render.compiled.rmd = function(cr,txt = cr$body,params=list(),parent.env=globalenv(), fragment.only = FALSE, chunks=c("knit","eval")[1], out.type="html") {
+render.compiled.rmd = function(cr,txt = cr$body,envir=parent.frame(), fragment.only = FALSE, chunks=c("knit","eval")[1], out.type="html") {
   restore.point("render.compiled.rmd")
 
   # First replace if df
-  txt = replace.if.blocks(txt,env = params,if.df = cr$if.df)
+  txt = replace.if.blocks(txt,envir = envir,if.df = cr$if.df)
 
   txt = merge.lines(txt)
 
@@ -208,15 +196,11 @@ render.compiled.rmd = function(cr,txt = cr$body,params=list(),parent.env=globale
     #no.val = cr$ph$value.class == "" | cr$ph$value.class == "error"
     no.val = rep(TRUE, length(phs))
 
-    env = as.environment(params)
-    if (!is.null(parent.env))
-      parent.env(env) = parent.env
-
     comp.val = ph.comp.val = (has.ph & no.val)
     ind = 1
     new.values = lapply(which(comp.val), function(ind) {
       restore.point("inner.ph")
-      val = eval.placeholder(cr$ph[ind,],env=env, chunks=chunks, out.type=cr$out.type, cr=cr)
+      val = eval.placeholder(cr$ph[ind,],envir=envir, chunks=chunks, out.type=cr$out.type, cr=cr)
       render.value(val, out.type=out.type)
     })
     cr$ph$value[comp.val] = new.values
@@ -230,7 +214,8 @@ render.compiled.rmd = function(cr,txt = cr$body,params=list(),parent.env=globale
 
   comp.val = !is.na(head.loc[,1])
   new.values = lapply(which(comp.val), function(ind) {
-    val = eval.hf(txt = substring(txt, head.loc[ind,2]+1,foot.loc[ind,1]-1 ), cr$hf[ind,],env=env, out.type=cr$out.type, cr=cr)
+    restore.point("ufz8be7f47fb3w6xq")
+    val = eval.hf(txt = substring(txt, head.loc[ind,2]+1,foot.loc[ind,1]-1 ), cr$hf[ind,],envir=envir, out.type=cr$out.type, cr=cr)
     render.value(val, out.type=out.type)
   })
   cr$hf$value[comp.val] = new.values
@@ -321,7 +306,8 @@ render.value = function(val, out.type="html",...) {
     if (is.data.frame(val)) {
       return(table.knit_print.data.frame(val,...))
     }
-    return(knit_print(val))
+    trash = capture.output(res <- knit_print(val))
+    return(res)
   }
 
   if (is(val,"shiny.tag.list")) {
@@ -335,7 +321,8 @@ render.value = function(val, out.type="html",...) {
   if (is.data.frame(val)) {
     return(table.knit_print.data.frame(val,...))
   }
-  knit_print(val)
+  trash = capture.output(res <- knit_print(val))
+  res
 }
 
 whiskered.html.to.list = function(txt, values, transform.txt.fun=HTML) {

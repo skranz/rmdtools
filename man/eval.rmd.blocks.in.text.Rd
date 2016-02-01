@@ -4,7 +4,7 @@
 \alias{eval.rmd.blocks.in.text}
 \title{compile all given types of rmd blocks}
 \usage{
-eval.rmd.blocks.in.text(txt, to = "html", env = parent.frame(),
+eval.rmd.blocks.in.text(txt, to = "html", envir = parent.frame(),
   call.list = NULL, block.df = NULL, only.types = NULL,
   ignore.types = "if", use.del.rows.na = FALSE, replace.funs = NULL)
 }

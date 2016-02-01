@@ -26,7 +26,7 @@ get.note.block.spec = function() {
   )
 }
 
-eval.note.block = function(txt,env=parent.frame(), out.type="html",cr=NULL,info=NULL, render.txt = !is.null(cr), has.header=TRUE, ...) {
+eval.note.block = function(txt,envir=parent.frame(), out.type="html",cr=NULL,info=NULL, render.txt = !is.null(cr), has.header=TRUE, ...) {
   restore.point("eval.note.block")
   if (is.null(info)) {
     info = make.note.block.info(txt)
@@ -38,7 +38,7 @@ eval.note.block = function(txt,env=parent.frame(), out.type="html",cr=NULL,info=
 
   #render.txt = FALSE
   if (render.txt) {
-    content = render.compiled.rmd(cr=cr,txt=txt, params=env, out.type=out.type, parent.env=NULL)
+    content = render.compiled.rmd(cr=cr,txt=txt, envir=envir, out.type=out.type)
   } else {
     content = HTML(paste0(txt, collapse="\n"))
   }
@@ -50,7 +50,7 @@ eval.note.block = function(txt,env=parent.frame(), out.type="html",cr=NULL,info=
 
 #' extract #< if blocks from a rmd txt
 #' @export
-compile.note.block.to.tag = function(txt, env=parent.frame(), info=NULL) {
+compile.note.block.to.tag = function(txt, envir=parent.frame(), info=NULL) {
   restore.point("compile.note.block.to.html")
   if (is.null(info)) {
     info = make.note.block.info(txt)
@@ -61,9 +61,9 @@ compile.note.block.to.tag = function(txt, env=parent.frame(), info=NULL) {
 
 #' extract #< if blocks from a rmd txt
 #' @export
-compile.note.block.to.html = function(txt, env=parent.frame(), info=NULL) {
+compile.note.block.to.html = function(txt, envir=parent.frame(), info=NULL) {
   restore.point("compile.note.block.to.html")
-  as.character(compile.note.block.to.tag(txt, env, info))
+  as.character(compile.note.block.to.tag(txt, envir, info))
 }
 
 

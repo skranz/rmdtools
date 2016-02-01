@@ -132,7 +132,7 @@ chunk.opt.string.to.list = function(str, keep.name=FALSE) {
 #' Render all knitr chunks in the same way as a whisker
 #'  (taking into some chunk options, like results="asis")
 #' @export
-eval.chunks.in.text = function(rmd, params=list(), env=parent.frame()) {
+eval.chunks.in.text = function(rmd, envir=parent.frame()) {
   restore.point("render.chunks.like.whisker")
 
   rmd = sep.lines(rmd)
@@ -140,11 +140,9 @@ eval.chunks.in.text = function(rmd, params=list(), env=parent.frame()) {
   cdf = find.rmd.chunks(rmd)
   if (NROW(cdf)==0) return(rmd)
 
-  if (!is.null(params)) {
-    eenv = as.environment(params)
-    parent.env(eenv)<-env
-  } else {
-    eenv = env
+  if (is.list(envir)) {
+    envir = as.environment(envir)
+    parent.env(envir) = globalenv()
   }
 
   res = lapply(1:NROW(cdf), function(row) {

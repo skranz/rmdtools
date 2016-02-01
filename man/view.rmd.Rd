@@ -5,10 +5,10 @@
 \title{View an extended rmd file}
 \usage{
 view.rmd(file = NULL, text = readLines(file, warn = FALSE),
-  params = list(), parent.env = parent.frame(), use.blocks = FALSE,
-  use.whiskers = TRUE, start.line = "<!-- START -->", set.utf8 = TRUE,
-  knit = !chunk.like.whisker, chunk.like.whisker = FALSE,
-  out.type = "shiny")
+  envir = list(), use.blocks = FALSE, use.whiskers = TRUE,
+  start.line = "<!-- START -->", end.line = "<!-- END -->",
+  set.utf8 = TRUE, knit = !chunks.like.whisker,
+  chunks.like.whisker = FALSE, out.type = "shiny")
 }
 \description{
 View an extended rmd file

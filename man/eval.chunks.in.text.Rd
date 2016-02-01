@@ -5,7 +5,7 @@
 \title{Render all knitr chunks in the same way as a whisker
  (taking into some chunk options, like results="asis")}
 \usage{
-eval.chunks.in.text(rmd, params = list(), env = parent.frame())
+eval.chunks.in.text(rmd, envir = parent.frame())
 }
 \description{
 Render all knitr chunks in the same way as a whisker

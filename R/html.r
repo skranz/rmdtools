@@ -51,7 +51,7 @@ simple.html.page = function(head, body) {
 
 #' Variant of htmltools::htmlTemplate
 #' @export
-html.template = function (file=NULL, html=NULL, params=list(), parent.env=globalenv(), document_ = "auto")
+html.template = function (file=NULL, html=NULL, envir=parent.frame(),  document_ = "auto")
 {
   if (is.null(text)) {
     html <- readChar(file, file.info(file)$size, useBytes = TRUE)
@@ -68,15 +68,15 @@ html.template = function (file=NULL, html=NULL, params=list(), parent.env=global
           stop("Mismatched {{ and }} in HTML template.")
       }
   })
-  vars <- params
+  vars <- as.list(envir)
   if ("headContent" %in% names(vars)) {
       stop("Can't use reserved argument name 'headContent'.")
   }
   vars$headContent <- function() HTML("<!-- HEAD_CONTENT -->")
-  env <- list2env(vars, parent = parent.env())
+
   pieces[[1]] <- HTML(pieces[[1]])
   pieces[-1] <- lapply(pieces[-1], function(piece) {
-      tagList(eval(parse(text = piece[1]), env), HTML(piece[[2]]))
+      tagList(eval(parse(text = piece[1]), envir), HTML(piece[[2]]))
   })
   result <- tagList(pieces)
   if (document_ == "auto") {

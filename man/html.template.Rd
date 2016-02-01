@@ -4,8 +4,8 @@
 \alias{html.template}
 \title{Variant of htmltools::htmlTemplate}
 \usage{
-html.template(file = NULL, html = NULL, params = list(),
-  parent.env = globalenv(), document_ = "auto")
+html.template(file = NULL, html = NULL, envir = parent.frame(),
+  document_ = "auto")
 }
 \description{
 Variant of htmltools::htmlTemplate

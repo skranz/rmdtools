@@ -49,7 +49,7 @@ find.rmd.blocks = function(txt) {
 
 #' compile all given types of rmd blocks
 #' @export
-eval.rmd.blocks.in.text = function(txt, to="html", env=parent.frame(), call.list=NULL, block.df = NULL, only.types=NULL, ignore.types="if", use.del.rows.na=FALSE, replace.funs=NULL) {
+eval.rmd.blocks.in.text = function(txt, to="html", envir=parent.frame(), call.list=NULL, block.df = NULL, only.types=NULL, ignore.types="if", use.del.rows.na=FALSE, replace.funs=NULL) {
   restore.point("eval.rmd.blocks.in.text")
 
   if (is.null(block.df)) {
@@ -69,7 +69,7 @@ eval.rmd.blocks.in.text = function(txt, to="html", env=parent.frame(), call.list
     if (is.null(fun)) {
       fun = eval(parse(text=paste0("eval.",type,".block")))
     }
-    txt = fun(txt=txt, env=env, call.list=call.list, block.df=block.df, del.rows.na=use.del.rows.na)
+    txt = fun(txt=txt, envir=envir, call.list=call.list, block.df=block.df, del.rows.na=use.del.rows.na)
     if (!use.del.rows.na)
       block.df = find.rmd.blocks(txt)
   }
@@ -112,11 +112,11 @@ replace.blocks.txt = function(txt, block.txt, block.df, del.rows.na=FALSE,...) {
 
 #' extract #< if blocks from a rmd txt
 #' @export
-replace.if.blocks = function(txt, env=parent.frame(), call.list=NULL, block.df=NULL, warn.if.na=TRUE, del.rows.na=FALSE, if.df=NULL) {
+replace.if.blocks = function(txt, envir=parent.frame(), call.list=NULL, block.df=NULL, warn.if.na=TRUE, del.rows.na=FALSE, if.df=NULL) {
   restore.point("replace.if.blocks")
 
   if (!is.null(if.df)) {
-    return(replace.if.blocks.from.if.df(txt=txt, env=env, warn.if.na=warn.if.na,del.rows.na=del.rows.na, if.df=if.df))
+    return(replace.if.blocks.from.if.df(txt=txt, envir=envir, warn.if.na=warn.if.na,del.rows.na=del.rows.na, if.df=if.df))
   }
 
   if (is.null(block.df)) {
@@ -134,15 +134,15 @@ replace.if.blocks = function(txt, env=parent.frame(), call.list=NULL, block.df=N
     calls = call.list[str_calls]
   }
 
-  add = sapply(seq_along(calls), function(i) {
-    restore.point("replace.if.blocks.add")
-
-    call = calls[[i]]
-    res = (try(eval(call,envir=env)))
+  force(envir)
+  add = rep(FALSE, length(calls))
+  for (i in seq_along(calls)) {
+    res = try(eval(calls[[i]],envir),silent = TRUE)
     if ( warn.if.na & !is.logical(res))
       warning("Could not evaluate condition ", str_calls[[i]], " to TRUE or FALSE.")
-    isTRUE(res)
-  })
+    add[i] = isTRUE(res)
+  }
+
 
   del.rows = unique(unlist(lapply(which(!add),function(ind){
     block.df$start[ind]:block.df$end[ind]
@@ -159,7 +159,7 @@ replace.if.blocks = function(txt, env=parent.frame(), call.list=NULL, block.df=N
   return(txt)
 }
 
-replace.if.blocks.from.if.df = function(txt, env=parent.frame(), warn.if.na=TRUE, del.rows.na=FALSE, if.df=NULL,...) {
+replace.if.blocks.from.if.df = function(txt, envir=parent.frame(), warn.if.na=TRUE, del.rows.na=FALSE, if.df=NULL,...) {
   restore.point("replace.if.blocks.from.if.df")
 
   if (NROW(if.df)==0) return(txt)
@@ -174,7 +174,7 @@ replace.if.blocks.from.if.df = function(txt, env=parent.frame(), warn.if.na=TRUE
   add = sapply(rows, function(row) {
     restore.point("replace.if.blocks.add")
     call = if.df$info[[row]]$cond.call
-    res = (try(eval(call,envir=env)))
+    res = (try(eval(call,envir=envir)))
     if ( warn.if.na & !is.logical(res))
       warning("Could not evaluate condition ", if.df$info[[row]]$cond.str, " to TRUE or FALSE.")
     isTRUE(res)
@@ -343,20 +343,17 @@ adapt.hf.blocks = function(txt, block.df=NULL, out.type="html",only.types=c("if"
 }
 
 
-eval.hf = function(txt, hf, env = parent.frame(), dir=getwd(),out.type="html",cr=NULL, ...) {
+eval.hf = function(txt, hf, envir = parent.frame(), dir=getwd(),out.type="html",cr=NULL, ...) {
   restore.point("eval.hf")
 
   fun = eval(parse(text=paste0("eval.", hf$type,".block")))
-  res = fun(txt=txt,envir=env,out.type=out.type,chunk=chunk, info=hf$info[[1]], cr=cr, has.header=FALSE)
+  res = fun(txt=txt,envir=envir,out.type=out.type,chunk=chunk, info=hf$info[[1]], cr=cr, has.header=FALSE)
 
-#   if (is(res,"try-error")) {
-#     value = paste0("`Error when evaluating ", ph$type, " ", ph$txt, ":\n\n", as.character(res),"`")
-#     attr(value,"value.class") = "error"
-#   } else {
-#     value = res
-#     attr(value,"value.class") = class(value)[1]
-#   }
-  value
+  if (is(res,"try-error")) {
+     res = paste0("`Error when evaluating ", ph$type, " ", ph$txt, ":\n\n", as.character(res),"`")
+     attr(res,"value.class") = "error"
+  }
+  res
 }
 
 

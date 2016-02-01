@@ -4,7 +4,7 @@
 \alias{replace.if.blocks}
 \title{extract #< if blocks from a rmd txt}
 \usage{
-replace.if.blocks(txt, env = parent.frame(), call.list = NULL,
+replace.if.blocks(txt, envir = parent.frame(), call.list = NULL,
   block.df = NULL, warn.if.na = TRUE, del.rows.na = FALSE, if.df = NULL)
 }
 \description{

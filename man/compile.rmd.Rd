@@ -5,13 +5,12 @@
 \title{Main function to compile rmd to html}
 \usage{
 compile.rmd(file = NULL, text = readLines(file, warn = FALSE),
-  params = NULL, parent.env = parent.frame(), if.blocks = c("ph",
-  "render", "ignore")[1], blocks = c("ph", "render", "ignore")[1],
-  whiskers = c("ph", "render", "render.as.text", "ignore")[1],
-  chunks = c("ph", "knit", "render", "ignore")[1],
-  start.line = "<!-- START -->", set.utf8 = TRUE, out.type = "html",
-  fragment.only = FALSE, whiskers.call.list = NULL,
-  blocks.call.list = NULL, add.info = TRUE)
+  envir = list(), if.blocks = c("ph", "render", "ignore")[1],
+  blocks = c("ph", "render", "ignore")[1], whiskers = c("ph", "render",
+  "render.as.text", "ignore")[1], chunks = c("ph", "knit", "render",
+  "ignore")[1], start.line = "<!-- START -->", end.line = "<!-- END -->",
+  set.utf8 = TRUE, out.type = "html", fragment.only = FALSE,
+  whiskers.call.list = NULL, blocks.call.list = NULL, add.info = TRUE)
 }
 \description{
 Main function to compile rmd to html

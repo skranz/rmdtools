@@ -7,21 +7,21 @@ make.placeholder.info = function(txt, type, form) {
   stop(paste0("unknown placeholder form: ", form))
 }
 
-eval.placeholder = function(ph, env = parent.frame(), chunks="knit", dir=getwd(),out.type="html",cr=NULL, ...) {
+eval.placeholder = function(ph, envir = parent.frame(), chunks="knit", dir=getwd(),out.type="html",cr=NULL, ...) {
   restore.point("eval.placeholder")
 
   if (ph$type == "chunk" & chunks=="knit") {
-    res = try(knit.chunk(ph$txt,envir=env, knit.dir=dir,out.type=out.type))
+    res = try(knit.chunk(ph$txt,envir=envir, knit.dir=dir,out.type=out.type))
   } else if (ph$form == "block") {
     fun = eval(parse(text=paste0("eval.", ph$type,".block")))
-    res = fun(txt=ph$txt,envir=env,out.type=out.type,chunk=chunk, info=ph$info[[1]], cr=cr)
+    res = fun(txt=ph$txt,envir=envir,out.type=out.type,chunk=chunk, info=ph$info[[1]], cr=cr)
   } else {
-    res = try(eval(ph$info[[1]]$expr, env), silent=TRUE)
+    res = try(eval(ph$info[[1]]$expr, envir), silent=TRUE)
   }
 
   if (is(res,"try-error")) {
     value = paste0("`Error when evaluating ", ph$type, " ", ph$txt, ":\n\n", as.character(res),"`")
-    #attr(value,"value.class") = "character"
+    attr(value,"value.class") = "error"
   } else {
     value = res
     #attr(value,"value.class") = class(value)[1]

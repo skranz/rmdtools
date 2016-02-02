@@ -2,7 +2,7 @@
 
 #' View an extended rmd file
 #' @export
-view.rmd = function(file=NULL, text=readLines(file,warn = FALSE), envir=list(), use.blocks=FALSE, use.whiskers=TRUE, start.line="<!-- START -->", end.line = "<!-- END -->", set.utf8=TRUE, knit=!chunks.like.whisker, chunks.like.whisker=FALSE, out.type = "shiny") {
+view.rmd = function(file=NULL, text=readLines(file,warn = FALSE), envir=list(), start.line="<!-- START -->", end.line = "<!-- END -->", set.utf8=TRUE, knit=!chunks.like.whisker, chunks.like.whisker=FALSE, out.type = "shiny", launch.browser=rstudio::viewer) {
   restore.point("view.rmd")
 
   cr = compile.rmd(file=file, text=text, envir=envir, out.type = out.type, start.line=start.line, end.line=end.line, chunks="ph", fragment.only=TRUE)
@@ -20,7 +20,7 @@ view.rmd = function(file=NULL, text=readLines(file,warn = FALSE), envir=list(), 
     app$ui = fluidPage(
       ui
     )
-    runEventsApp(app,launch.browser = rstudio::viewer)
+    runEventsApp(app,launch.browser = launch.browser)
   } else {
     html = render.compiled.rmd(cr,envir=envir,fragment.only=FALSE, chunks=chunks)
     out.file <- tempfile(fileext = ".html")
@@ -175,9 +175,9 @@ compile.rmd = function(file=NULL, text=readLines(file,warn = FALSE), envir=list(
   return(cr)
 }
 
-
-
-render.compiled.rmd = function(cr,txt = cr$body,envir=parent.frame(), fragment.only = FALSE, chunks=c("knit","eval")[1], out.type="html") {
+#' Render a compiled rmd
+#' @export
+render.compiled.rmd = function(cr=NULL,txt = cr$body,envir=parent.frame(), fragment.only = FALSE, chunks=c("knit","eval")[1], out.type=if (is.null(cr$out.type)) "html" else cr$out.type ) {
   restore.point("render.compiled.rmd")
 
   # First replace if df

@@ -5,10 +5,10 @@
 \title{View an extended rmd file}
 \usage{
 view.rmd(file = NULL, text = readLines(file, warn = FALSE),
-  envir = list(), use.blocks = FALSE, use.whiskers = TRUE,
-  start.line = "<!-- START -->", end.line = "<!-- END -->",
-  set.utf8 = TRUE, knit = !chunks.like.whisker,
-  chunks.like.whisker = FALSE, out.type = "shiny")
+  envir = list(), start.line = "<!-- START -->",
+  end.line = "<!-- END -->", set.utf8 = TRUE, knit = !chunks.like.whisker,
+  chunks.like.whisker = FALSE, out.type = "shiny",
+  launch.browser = rstudio::viewer)
 }
 \description{
 View an extended rmd file

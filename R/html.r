@@ -1,3 +1,19 @@
+md2html = function(text,fragment.only=FALSE, smart = FALSE,...) {
+  html = commonmark::markdown_html(text, smart=smart,...)
+  restore.point("md2html")
+
+  Encoding(html) = "UTF8"
+
+  #html = paste0(html, collapse="\n")
+  if (!fragment.only) {
+    tag = "InNNer5Qwet44935t5GfECFCOPAjnKLNWAaaer6725389"
+    outer = markdownToHTML(text=tag, fragment.only=FALSE)
+    html = gsub(tag,html,outer,fixed=TRUE)
+  }
+  html = mark_utf8(html)
+  html
+}
+
 
 example.rmd.blocks.to.placeholders = function() {
   setwd("D:/libraries/rmdtools")

@@ -10,7 +10,18 @@ view.rmd = function(file=NULL, text=readLines(file,warn = FALSE), envir=list(), 
   ph = cr$ph
   if (out.type == "shiny") {
     library(shinyEvents)
+
+    if (isTRUE(getApp()$view.rmd.app)) {
+      app = getApp();
+      app$view.rmd.app<-FALSE
+      msg = paste0("Nested call of view.rmd. Make sure you have correctly entered the start line:\n\n", start.line,"\n\nafter your initial chunk.")
+      warning(msg)
+      return(msg)
+    }
+
     app = eventsApp()
+    app$view.rmd.app = TRUE
+    on.exit(try({app = getApp(); app$view.rmd.app<-FALSE}))
     if (chunks.like.whisker) {
       chunks = "eval"
     } else {
@@ -20,6 +31,8 @@ view.rmd = function(file=NULL, text=readLines(file,warn = FALSE), envir=list(), 
     app$ui = fluidPage(
       ui
     )
+    app$view.rmd.app=FALSE
+
     runEventsApp(app,launch.browser = launch.browser)
   } else {
     html = render.compiled.rmd(cr,envir=envir,fragment.only=FALSE, chunks=chunks)
@@ -142,7 +155,7 @@ compile.rmd = function(file=NULL, text=readLines(file,warn = FALSE), envir=list(
     }
 
   } else if (out.type=="html" | out.type == "shiny") {
-    text = markdownToHTML(text=text, fragment.only=fragment.only)
+    text = md2html(text, fragment.only=fragment.only)
   }
 
   body.start = NA
@@ -161,6 +174,7 @@ compile.rmd = function(file=NULL, text=readLines(file,warn = FALSE), envir=list(
     head = NULL
   }
 
+
   cr = nlist(
     head = head,
     body = body,
@@ -173,6 +187,22 @@ compile.rmd = function(file=NULL, text=readLines(file,warn = FALSE), envir=list(
     block.types = types
   )
   return(cr)
+}
+
+# correct bugs in markdown conversion that destroys HTML comments
+correct.hf.html = function(txt,hf=NULL, if.df=NULL) {
+  restore.point("correct.hf.html")
+
+  txt = merge.lines(txt)
+  str = c(hf$head,hf$foot, if.df$head, if.df$foot)
+  if (length(str)==0) return(txt)
+  wrong1 = gsub("<!--","<!&ndash;",str,fixed=TRUE)
+  wrong2 = gsub("-->","&ndash;>",str,fixed=TRUE)
+  wrong3 = gsub("-->","&ndash;>",str,fixed=TRUE)
+
+  txt = str.replace(txt,c(wrong1,wrong2,wrong3),rep(str, times=3), fixed=TRUE)
+
+  txt
 }
 
 #' Render a compiled rmd
@@ -342,7 +372,7 @@ whiskered.txt.to.list = function(txt, values, transform.txt.fun=NULL) {
 
   pieces <- strsplit(txt, "{{", fixed = TRUE)[[1]]
   pieces <- strsplit(pieces, "}}", fixed = TRUE)
-  if (length(pieces[[1]]) != 1) {
+  if (length(pieces[[1]]) > 1) {
       stop("Mismatched {{ and }} in whiskered txt.")
   }
   lapply(pieces[-1], function(x) {

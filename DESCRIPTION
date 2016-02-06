@@ -15,5 +15,6 @@ Depends:
     htmltools,
     codeUtils,
     markdown,
+    commonmark,
     knitr
 RoxygenNote: 5.0.0

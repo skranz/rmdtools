@@ -4,6 +4,7 @@
 #' @param end vector of end positions of the blocks
 #' @param start.level the initial level
 #' @return a vector of levels of each blocks, moore deeply nested blocks have higher levels
+#' @export
 get.start.end.levels = function(start, end, start.level = 1L) {
   n = length(start)
   if (n==0) return(NULL)
@@ -32,6 +33,7 @@ get.start.end.levels = function(start, end, start.level = 1L) {
 #'
 #' @param levels integer vector of levels must start with lowest level and increase by 1 or decrease to an integer number
 #' @return a vector of parent indices or 0 for most outer levels
+#' @export
 get.levels.parents = function(levels) {
   n = length(levels)
   if (n==0) return(NULL)
@@ -58,6 +60,7 @@ get.levels.parents = function(levels) {
 #' @param types character vector of types
 #' @param parent.types the parent.types that shall be characterized
 #' @return a matrix of parent type indices with length(levels) rows and length(parent.types) columns. If there is no parent type, we enter a 0.
+#' @export
 get.levels.parents.by.types = function(levels, types, parent.types = setdiff(unique(types),c(NA))) {
   restore.point("get.levels.parents.by.types")
 

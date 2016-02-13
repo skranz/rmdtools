@@ -18,12 +18,17 @@ examples.nested = function() {
   d = cbind(df,pt)
 }
 
+#' find blocks, chunks and dot blocks and add nesting info
+#' @param txt the rmd source as character vector, each line one element
+#' @param dot.levels a list that describes the level of dot block types
+#' @return a data.frame
+#' @export
 find.rmd.nested = function(txt, dot.levels = NULL) {
   restore.point("find.rmd.nested")
 
-  bdf = find.rmd.blocks(txt)
-  cdf = find.rmd.chunks(txt) %>% select(start,end) %>% mutate(type="chunk", arg.str = NA_character_)
-  ddf = find.dot.blocks(txt, dot.levels)
+  bdf = find.rmd.blocks(txt) %>% mutate(form="block")
+  cdf = find.rmd.chunks(txt) %>% select(start,end) %>% mutate(type="chunk", arg.str = NA_character_) %>% mutate(form="chunk")
+  ddf = find.dot.blocks(txt, dot.levels) %>% mutate(form="dotblock")
 
   df = rbind(ddf,bdf,cdf) %>% arrange(start,-end)
   df$level = get.start.end.levels(df$start, df$end)
@@ -35,6 +40,7 @@ find.rmd.nested = function(txt, dot.levels = NULL) {
 #'
 #' #. type arguments
 #'
+#' @export
 find.dot.blocks = function(txt,dot.levels = NULL, dot.start = "#. ") {
   restore.point("find.dot.blocks")
 

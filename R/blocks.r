@@ -39,10 +39,20 @@ find.rmd.blocks = function(txt) {
   start_row = start
   end_row = end[blocks[,2]]
   #cbind(start_row, end_row)
+
+  str = txt[start]
   str = str.trim(str.right.of(txt[start],"#< "))
 
+  #type = str.right.of(str,dot.start) %>% str.trim %>% str.left.of(" ")
+  #arg.str = str.right.of(str,dot.start) %>%
+
   type = str.trim(str.left.of(str," "))
-  arg.str = str.right.of(str," ")
+  arg.str = str.right.of(str,type) %>% str.trim
+
+  if (any(is.na(type))) {
+    msg = paste0(start[is.na(type)],": ", txt[start[is.na(type)]], collapse = "\n")
+    stop(paste0("Could not parse types in the following lines:\n\n",msg))
+  }
 
   data.frame(start=start_row, end=end_row, type=type, arg.str=arg.str,stringsAsFactors = FALSE)
 }
@@ -266,24 +276,51 @@ markdown.blocks.call.list = function(txt) {
 
 }
 
+#' Parse an arg.str as list
+#' @export
+parse.arg.str = function(arg.str) {
+  code = paste0("list(",arg.str,")")
+  eval(base::parse(text=code,srcfile=NULL))
+}
+
 #' Parse the name of an rmd block
 #' @export
-parse.block.args = function(header) {
+parse.block.args = function(header, arg.str=NULL, add.type = TRUE, type = "") {
   restore.point("parse.block.args")
 
-  str = header
-  tokens = str.split(str,",")
-  str = str.trim(str.right.of(str,"#< "))
-  type = str.left.of(str," ")
-  str = str.right.of(str," ")
-  code = paste0("list(",str,")")
-  li = eval(base::parse(text=code,srcfile=NULL))
+  if (is.null(arg.str)) {
+    str = header
+    str = str.trim(str.right.of(str,"#< "))
+    type = str.left.of(str," ")
+    arg.str = str.right.of(str," ")
+  }
 
-  if (length(li)==0) return(list(name=NULL))
-  if (is.null(names(li))) {
-    return(list(type=type,name=li[[1]]))
-  } else if (nchar(names(li)[1]) == 0) {
-    return(c(list(type=type,name=li[[1]]),li[-1]))
+ 
+  code = paste0("alist(",arg.str,")")
+  li = eval(base::parse(text=code,srcfile=NULL))
+  li =  lapply(li, function(el) {
+      res = try(eval(el, envir=baseenv()), silent=TRUE)
+      if (is(res,"try-error")) return(as.character(el))
+      res
+  })
+
+  if (add.type) {
+    if (length(li)==0) return(list(name=NULL, type=type))
+
+    if (is.null(names(li))) {
+      return(list(type=type,name=li[[1]]))
+    } else if (nchar(names(li)[1]) == 0) {
+      return(c(list(type=type,name=li[[1]]),li[-1]))
+    }
+
+  } else {
+    if (length(li)==0) return(list(name=NULL))
+
+    if (is.null(names(li))) {
+      return(list(name=li[[1]]))
+    } else if (nchar(names(li)[1]) == 0) {
+      return(c(list(name=li[[1]]),li[-1]))
+    }
   }
   li
 }

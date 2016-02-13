@@ -94,11 +94,17 @@ parse.chunk.names = function(header) {
 
 #' Parse the name of a knitr chunk and its arguments
 #' @export
-parse.chunk.args = function(str) {
+parse.chunk.args = function(header, arg.str=NULL) {
   restore.point("parse.chunk.opt.and.name")
-  knitr:::parse_params(str.between(str,"r ","}"))
-}
+  if (!is.null(arg.str)) {
+    if (is.na(arg.str)) return(list())
+    return(knitr:::parse_params(arg.str))
+  }
 
+  str = str.right.of(header,"r ",not.found = NA)
+  if (is.na(str)) return(list())
+  knitr:::parse_params(str.left.of(str,"}"))
+}
 
 
 #' Translates a chunk header to a list of its option

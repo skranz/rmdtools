@@ -1,4 +1,12 @@
-md2html = function(text,fragment.only=FALSE, smart = FALSE,...) {
+#' Own markdown to html converter that interfaces commonmark
+#'
+#' @param text the variable containing the markdown text
+#' @param fragment.only only a fragment or should html headers be added
+#' @param smart smart punctuation (default FALSE)
+#' @return The created HTML as a string
+#' @export
+
+md2html = function(text,fragment.only=TRUE, smart = FALSE,...) {
   html = commonmark::markdown_html(text, smart=smart,...)
   restore.point("md2html")
 
@@ -27,17 +35,20 @@ example.rmd.blocks.to.placeholders = function() {
 
 #' View an extended rmd file
 #' @export
-view.html = function(file=NULL, text=readLines(file,warn = FALSE), browser=rstudio::viewer) {
+view.html = function(file=NULL, text=if (!is.null(file)) readLines(file,warn = FALSE) else NULL, ui=NULL, browser=rstudio::viewer, dir=getwd()) {
   restore.point("view.html")
-  if (is.null(file)) {
-    file <- tempfile(fileext = ".html")
-    writeLines(text, file)
-  }
+
+  if (is.null(ui)) ui = HTML(text)
 
   library(shinyEvents)
+  old.app = getApp()
+  on.exit(setApp(old.app))
+  shiny::addResourcePath("figure",paste0(dir,"/figure"))
+
   app = eventsApp()
-  app$ui = fluidPage(HTML(text))
+  app$ui = fluidPage(ui)
   runEventsApp(app, launch.browser=browser)
+
 
   #browseURL(paste0('file://',file))
 

@@ -36,21 +36,16 @@ knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE
   html
 }
 
-
-#' Knits the rmd txt inside a temporary directory instead of the current wd
+#' Knits the rmd txt
 #'
-#' Does not create /figure subfolder in current wd
 #' @export
-knit.rmd.in.temp = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE, encoding = getOption("encoding"), html.table = TRUE, out.type="html") {
+knit.rmd = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE, encoding = getOption("encoding"), html.table = TRUE, out.type="html") {
   restore.point("knit.rmd.in.temp")
 
   if (is.list(envir)) {
     envir =list2env(envir)
     parent.env(envir) = globalenv()
   }
-
-  owd <- setwd(tempdir())
-  on.exit(setwd(owd))
 
   #knitr::opts_knit$set(root.dir = owd)
   if (html.table) {
@@ -75,6 +70,17 @@ knit.rmd.in.temp = function(text, envir=parent.frame(), fragment.only=TRUE, quie
   html = md2html(text=md, fragment.only=fragment.only)
   if (out.type == "shiny") return(HTML(html))
   html
+}
+
+#' Knits the rmd txt inside a temporary directory instead of the current wd
+#'
+#' Does not create /figure subfolder in current wd
+#' @export
+knit.rmd.in.temp = function(text, envir=parent.frame(),...) {
+  restore.point("knit.rmd.in.temp")
+  owd <- setwd(tempdir())
+  on.exit(setwd(owd))
+  knit.rmd(text, envir,...)
 }
 
 

@@ -4,7 +4,7 @@
 \alias{parse.chunk.args}
 \title{Parse the name of a knitr chunk and its arguments}
 \usage{
-parse.chunk.args(str)
+parse.chunk.args(header, arg.str = NULL)
 }
 \description{
 Parse the name of a knitr chunk and its arguments

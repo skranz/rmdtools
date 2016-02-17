@@ -18,6 +18,8 @@ examples.nested = function() {
   d = cbind(df,pt)
 }
 
+mutate_.NULL = select_.NULL = arrange_.NULL = filter_.NULL = function(...) NULL
+
 #' find blocks, chunks and dot blocks and add nesting info
 #' @param txt the rmd source as character vector, each line one element
 #' @param dot.levels a list that describes the level of dot block types

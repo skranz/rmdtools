@@ -4,8 +4,8 @@
 \alias{view.html}
 \title{View an extended rmd file}
 \usage{
-view.html(file = NULL, text = readLines(file, warn = FALSE),
-  browser = rstudio::viewer)
+view.html(file = NULL, text = if (!is.null(file)) readLines(file, warn =
+  FALSE) else NULL, ui = NULL, browser = rstudio::viewer, dir = getwd())
 }
 \description{
 View an extended rmd file

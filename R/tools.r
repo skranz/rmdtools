@@ -29,12 +29,16 @@ get.start.end.levels = function(start, end, start.level = 1L) {
   levels
 }
 
+
+
 #' Find the parent index of each row given a vector levels that describes the nestedness
 #'
 #' @param levels integer vector of levels must start with lowest level and increase by 1 or decrease to an integer number
+#' @param is.parent.type NULL or a optional boolean vector of those rows
+#'        that are of a type for which children shall be found.
 #' @return a vector of parent indices or 0 for most outer levels
 #' @export
-get.levels.parents = function(levels) {
+get.levels.parents = function(levels, is.parent.type=NULL) {
   n = length(levels)
   if (n==0) return(NULL)
   parents = rep(0,n)
@@ -42,14 +46,35 @@ get.levels.parents = function(levels) {
   if (min.level != 1)
     levels = levels-min.level+1
 
-  level.parent = rep(NA_integer_,max(levels))
+  num.levels = max(levels)
 
-  for (i in 1:n) {
-    if (levels[i]>1) {
-      parents[i] = level.parent[levels[i]-1]
+  if (is.null(is.parent.type)) {
+    level.parent = rep(NA_integer_,num.levels)
+    for (i in 1:n) {
+      if (levels[i]>1) {
+        parents[i] = level.parent[levels[i]-1]
+      }
+      level.parent[levels[i]] = i
     }
-    level.parent[levels[i]] = i
+  } else {
+    level.parent = rep(0,num.levels)
+    # using is.parent.type
+    parent.level = 0
+    for (i in 1:n) {
+      if (levels[i]-1 < parent.level) {
+        parent.level= levels[i]-1
+        level.parent[(parent.level+1):num.levels] = 0
+      }
+      if (parent.level>0) {
+        parents[i] = level.parent[parent.level]
+      }
+      if (is.parent.type[i]) {
+        parent.level = levels[i]
+        level.parent[parent.level] = i
+      }
+    }
   }
+
   parents
 }
 
@@ -76,23 +101,32 @@ get.levels.parents.by.types = function(levels, types, parent.types = setdiff(uni
   if (is.character(types)) {
     colnames(ltp) = parent.types
   }
+  #rownames(tp) = paste0(1:n,"_",types,"_",levels)
+  colnames(tp) = paste0("parent_",parent.types)
 
   i = 0
   i = i+1
   for (i in 1:n) {
     tp[i,] = ltp[levels[i],]
 
-    # reset earlier levels
+    # reset parent levels for types of a higher or equally
+    # high level
     if (i>1) {
       if (levels[i]<=levels[i-1]) {
-        ltp[(levels[i]:levels[i-1])+1,] = 0
+        # the values to which we want to clear
+        # these are the type parent indexes of
+        # lower levels
+        clear.values = ltp[levels[i]+1-1,]
+        # transform to matrix by row
+        clear.mat = matrix(clear.values,nrow=(levels[i-1]-levels[i]+1),ncol=length(clear.values),byrow=TRUE)
+        # clear ltp
+        ltp[(levels[i]:levels[i-1])+1,] = clear.mat
       }
     }
     if (types[i] %in% parent.types) {
       ltp[(levels[i]:max.level)+1,types[i]] = i
     }
   }
-  colnames(tp) = paste0("parent_",parent.types)
   tp
 }
 

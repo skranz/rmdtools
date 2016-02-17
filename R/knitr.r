@@ -31,7 +31,7 @@ knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE
   if (out.type =="md" | out.type == "rmd") return(md)
 
   #writeClipboard(html)
-  html = md2html(text=md, fragment.only=fragment.only)
+  html = md2html(text=md, fragment.only=fragment.only, use.commonmark = TRUE)
   if (out.type == "shiny") return(HTML(html))
   html
 }

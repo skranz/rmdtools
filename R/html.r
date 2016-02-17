@@ -2,12 +2,25 @@
 #'
 #' @param text the variable containing the markdown text
 #' @param fragment.only only a fragment or should html headers be added
-#' @param smart smart punctuation (default FALSE)
+#' @param options options to markdownToHTML. These are the default options without smartypants
+#' @param smart smart punctuation (relevant for commonmark)
+#' @param use.commonmark use commonmark instead of markdownToHTML (no mathjax and included images)...
 #' @return The created HTML as a string
+#'
 #' @export
 
-md2html = function(text,fragment.only=TRUE, smart = FALSE,...) {
+md2html = function(text,fragment.only=TRUE, options=c("use_xhtml","mathjax",if (include.images) "base64_images" else NULL,"highlight_code"), include.images=TRUE, smart = FALSE, use.commonmark=FALSE,...) {
+  if (!use.commonmark) {
+    html = markdownToHTML(text=text, options=options,fragment.only=fragment.only,...)
+    restore.point("md2html.1")
+
+    html = mark_utf8(html)
+    return(html)
+  }
+
+
   html = commonmark::markdown_html(text, smart=smart,...)
+
   restore.point("md2html")
 
   Encoding(html) = "UTF8"
@@ -43,7 +56,7 @@ view.html = function(file=NULL, text=if (!is.null(file)) readLines(file,warn = F
   library(shinyEvents)
   old.app = getApp()
   on.exit(setApp(old.app))
-  shiny::addResourcePath("figure",paste0(dir,"/figure"))
+  try(shiny::addResourcePath("figure",paste0(dir,"/figure")), silent=TRUE)
 
   app = eventsApp()
   app$ui = fluidPage(ui)

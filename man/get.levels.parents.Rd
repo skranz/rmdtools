@@ -4,10 +4,13 @@
 \alias{get.levels.parents}
 \title{Find the parent index of each row given a vector levels that describes the nestedness}
 \usage{
-get.levels.parents(levels)
+get.levels.parents(levels, is.parent.type = NULL)
 }
 \arguments{
 \item{levels}{integer vector of levels must start with lowest level and increase by 1 or decrease to an integer number}
+
+\item{is.parent.type}{NULL or a optional boolean vector of those rows
+that are of a type for which children shall be found.}
 }
 \value{
 a vector of parent indices or 0 for most outer levels

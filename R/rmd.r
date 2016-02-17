@@ -65,30 +65,7 @@ compile.rmd = function(file=NULL, text=readLines(file,warn = FALSE), envir=list(
     text = mark_utf8(text)
   }
 
-  # skip lines until start.tag
-  offset = 0
-  if (is.character(start.line)) {
-    rows = which(str.trim(text)==start.line)
-    if (length(rows)>0) {
-      start.line = rows[1]+1
-    } else {
-      start.line = NULL
-    }
-  }
-  if (is.character(end.line)) {
-    rows = which(str.trim(text)==end.line)
-    if (length(rows)>0) {
-      end.line = rows[1]-1
-    } else {
-      end.line = length(text)
-    }
-  }
-
-  if (!is.null(start.line) | !is.null(end.line)) {
-    if (is.null(start.line)) start.line = 1
-    if (is.null(end.line)) end.line = length(text)
-    text = text[start.line:end.line]
-  }
+  text = rmd.between.start.end.lines(text,start.line=start.line, end.line=end.line)
 
   if.df = hf = ph = NULL
   ph.li = vector("list",3)
@@ -187,6 +164,42 @@ compile.rmd = function(file=NULL, text=readLines(file,warn = FALSE), envir=list(
     block.types = types
   )
   return(cr)
+}
+
+#' Extract rmd txt between start.line and end.line tag
+#' @export
+rmd.between.start.end.lines = function(txt,start.line="<!-- START -->", end.line = "<!-- END -->", return.start.end = FALSE) {
+  restore.point("rmd.between.start.end.lines")
+
+    # skip lines until start.tag
+
+  if (is.character(start.line)) {
+    rows = which(str.trim(txt)==start.line)
+    if (length(rows)>0) {
+      start.line = rows[1]+1
+    } else {
+      start.line = NULL
+    }
+  }
+  if (is.character(end.line)) {
+    rows = which(str.trim(txt)==end.line)
+    if (length(rows)>0) {
+      end.line = rows[1]-1
+    } else {
+      end.line = length(txt)
+    }
+  }
+
+  if (!is.null(start.line) | !is.null(end.line)) {
+    if (is.null(start.line)) start.line = 1
+    if (is.null(end.line)) end.line = length(txt)
+    txt = txt[start.line:end.line]
+  }
+  if (return.start.end) {
+    return(list(txt = txt,start=start.line, end=end.line))
+  } else {
+    return(txt)
+  }
 }
 
 # correct bugs in markdown conversion that destroys HTML comments

@@ -4,14 +4,20 @@
 \alias{md2html}
 \title{Own markdown to html converter that interfaces commonmark}
 \usage{
-md2html(text, fragment.only = TRUE, smart = FALSE, ...)
+md2html(text, fragment.only = TRUE, options = c("use_xhtml", "mathjax", if
+  (include.images) "base64_images" else NULL, "highlight_code"),
+  include.images = TRUE, smart = FALSE, use.commonmark = FALSE, ...)
 }
 \arguments{
 \item{text}{the variable containing the markdown text}
 
 \item{fragment.only}{only a fragment or should html headers be added}
 
-\item{smart}{smart punctuation (default FALSE)}
+\item{options}{options to markdownToHTML. These are the default options without smartypants}
+
+\item{smart}{smart punctuation (relevant for commonmark)}
+
+\item{use.commonmark}{use commonmark instead of markdownToHTML (no mathjax and included images)...}
 }
 \value{
 The created HTML as a string

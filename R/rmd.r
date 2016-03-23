@@ -2,10 +2,10 @@
 
 #' View an extended rmd file
 #' @export
-view.rmd = function(file=NULL, text=readLines(file,warn = FALSE), envir=list(), start.line="<!-- START -->", end.line = "<!-- END -->", set.utf8=TRUE, knit=!chunks.like.whisker, chunks.like.whisker=FALSE, out.type = "shiny", launch.browser=rstudio::viewer) {
+view.rmd = function(file=NULL, text=readLines(file,warn = FALSE), envir=list(), start.line="<!-- START -->", end.line = "<!-- END -->", set.utf8=TRUE, knit=!chunks.like.whisker, chunks.like.whisker=FALSE, out.type = "shiny", launch.browser=rstudio::viewer, use.commonmark=FALSE) {
   restore.point("view.rmd")
 
-  cr = compile.rmd(file=file, text=text, envir=envir, out.type = out.type, start.line=start.line, end.line=end.line, chunks="ph", fragment.only=TRUE)
+  cr = compile.rmd(file=file, text=text, envir=envir, out.type = out.type, start.line=start.line, end.line=end.line, chunks="ph", fragment.only=TRUE, use.commonmark=use.commonmark)
 
   ph = cr$ph
   if (out.type == "shiny") {
@@ -56,7 +56,7 @@ examples.compile.rmd = function() {
 
 #' Main function to compile rmd to html
 #' @export
-compile.rmd = function(file=NULL, text=readLines(file,warn = FALSE), envir=list(), if.blocks = c("ph","render", "ignore")[1],  blocks=c("ph","render","ignore")[1], whiskers=c("ph","render","render.as.text", "ignore")[1], chunks=c("ph","knit", "render","ignore")[1], start.line="<!-- START -->",end.line = "<!-- END -->", set.utf8=TRUE, out.type = "html", fragment.only=FALSE, whiskers.call.list=NULL, blocks.call.list=NULL, add.info=TRUE) {
+compile.rmd = function(file=NULL, text=readLines(file,warn = FALSE), envir=list(), if.blocks = c("ph","render", "ignore")[1],  blocks=c("ph","render","ignore")[1], whiskers=c("ph","render","render.as.text", "ignore")[1], chunks=c("ph","knit", "render","ignore")[1], start.line="<!-- START -->",end.line = "<!-- END -->", set.utf8=TRUE, out.type = "html", fragment.only=FALSE, whiskers.call.list=NULL, blocks.call.list=NULL, add.info=TRUE, use.commonmark=use.commonmark) {
 
   restore.point("compile.rmd")
 
@@ -124,7 +124,7 @@ compile.rmd = function(file=NULL, text=readLines(file,warn = FALSE), envir=list(
 
   # Transform remaining text to out.type
   if (chunks == "knit") {
-    text = knit.rmd.in.temp(text=text, quiet=TRUE,envir=envir, fragment.only=fragment.only, out.type=out.type)
+    text = knit.rmd.in.temp(text=text, quiet=TRUE,envir=envir, fragment.only=fragment.only, out.type=out.type,use.commonmark=use.commonmark)
 
     if (out.type == "html" | out.type == "shiny") {
       text = gsub("&lt;!&ndash;html_preserve&ndash;&gt;","",text, fixed=TRUE)
@@ -132,7 +132,7 @@ compile.rmd = function(file=NULL, text=readLines(file,warn = FALSE), envir=list(
     }
 
   } else if (out.type=="html" | out.type == "shiny") {
-    text = md2html(text, fragment.only=fragment.only)
+    text = md2html(text, fragment.only=fragment.only,use.commonmark=use.commonmark)
   }
 
   body.start = NA

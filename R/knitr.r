@@ -39,8 +39,8 @@ knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE
 #' Knits the rmd txt
 #'
 #' @export
-knit.rmd = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE, encoding = getOption("encoding"), html.table = TRUE, out.type="html") {
-  restore.point("knit.rmd.in.temp")
+knit.rmd = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE, encoding = getOption("encoding"), html.table = TRUE, out.type="html", use.commonmark=FALSE) {
+  restore.point("knit.rmd")
 
   if (is.list(envir)) {
     envir =list2env(envir)
@@ -67,7 +67,7 @@ knit.rmd = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE, 
   if (out.type =="md" | out.type=="rmd") return(md)
 
   #writeClipboard(html)
-  html = md2html(text=md, fragment.only=fragment.only)
+  html = md2html(text=md, fragment.only=fragment.only, use.commonmark = use.commonmark)
   if (out.type == "shiny") return(HTML(html))
   html
 }

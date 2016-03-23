@@ -1,3 +1,23 @@
+#' Gets for each element the index of its type
+#' @param types a character vector of types
+#' @export
+get.types.inds = function(types) {
+  utypes = uniqe(type)
+  nu = length(utypes)
+  if (nu==0) return(NULL)
+
+  inds = rep(0, length(types))
+  count = integer(nu)
+  names(count) = utypes
+
+  for (i in 1:length(types)) {
+    count[types[i]] = count[types[i]]+1
+    inds[i] = count[types[i]]
+  }
+  inds
+
+}
+
 #' Find the levels given ordered start and end positions of possible nested blocks
 #'
 #' @param start vector of start positions of the blocks
@@ -198,6 +218,7 @@ read.as.utf8 = function(file, sep.lines=TRUE) {
   Encoding(text) <- "UTF-8"
   text
 }
+
 
 mark_utf8 = function(x) {
   if (is.character(x)) {

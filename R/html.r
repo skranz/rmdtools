@@ -11,10 +11,10 @@
 
 md2html = function(text,fragment.only=TRUE, options=c("use_xhtml","mathjax",if (include.images) "base64_images" else NULL,"highlight_code"), include.images=TRUE, smart = FALSE, use.commonmark=FALSE,...) {
   if (!use.commonmark) {
-    html = markdownToHTML(text=text, options=options,fragment.only=fragment.only,...)
+    html = markdownToHTML(text=text, options=options,fragment.only=fragment.only,encoding="UTF-8",...)
     restore.point("md2html.1")
 
-    html = mark_utf8(html)
+    html = enc2utf8(html)
     return(html)
   }
 
@@ -23,15 +23,15 @@ md2html = function(text,fragment.only=TRUE, options=c("use_xhtml","mathjax",if (
 
   restore.point("md2html")
 
-  Encoding(html) = "UTF8"
+  Encoding(html) = "UTF-8"
 
   #html = paste0(html, collapse="\n")
   if (!fragment.only) {
     tag = "InNNer5Qwet44935t5GfECFCOPAjnKLNWAaaer6725389"
-    outer = markdownToHTML(text=tag, fragment.only=FALSE)
+    outer = markdownToHTML(text=tag, fragment.only=FALSE,encoding="UTF-8")
     html = gsub(tag,html,outer,fixed=TRUE)
   }
-  html = mark_utf8(html)
+  html = enc2utf8(html)
   html
 }
 

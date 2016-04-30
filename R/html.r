@@ -51,7 +51,8 @@ example.rmd.blocks.to.placeholders = function() {
 view.html = function(file=NULL, text=if (!is.null(file)) readLines(file,warn = FALSE) else NULL, ui=NULL, browser=rstudio::viewer, dir=getwd()) {
   restore.point("view.html")
 
-  if (is.null(ui)) ui = HTML(text)
+  if (is.null(ui))
+    ui = htmltools::htmlTemplate(text_ = text)
 
   library(shinyEvents)
   old.app = getApp()

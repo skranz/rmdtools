@@ -10,6 +10,8 @@
 #' @export
 
 md2html = function(text,fragment.only=TRUE, options=c("use_xhtml","mathjax",if (include.images) "base64_images" else NULL,"highlight_code"), include.images=TRUE, smart = FALSE, use.commonmark=FALSE,...) {
+  if (is.null(text)) return(text)
+
   if (!use.commonmark) {
     html = markdownToHTML(text=text, options=options,fragment.only=fragment.only,encoding="UTF-8",...)
     restore.point("md2html.1")

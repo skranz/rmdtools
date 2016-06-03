@@ -10,7 +10,8 @@ compile.rmd(file = NULL, text = readLines(file, warn = FALSE),
   "render.as.text", "ignore")[1], chunks = c("ph", "knit", "render",
   "ignore")[1], start.line = "<!-- START -->", end.line = "<!-- END -->",
   set.utf8 = TRUE, out.type = "html", fragment.only = FALSE,
-  whiskers.call.list = NULL, blocks.call.list = NULL, add.info = TRUE)
+  whiskers.call.list = NULL, blocks.call.list = NULL, add.info = TRUE,
+  use.commonmark = use.commonmark)
 }
 \description{
 Main function to compile rmd to html

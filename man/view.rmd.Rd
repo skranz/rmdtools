@@ -8,7 +8,7 @@ view.rmd(file = NULL, text = readLines(file, warn = FALSE),
   envir = list(), start.line = "<!-- START -->",
   end.line = "<!-- END -->", set.utf8 = TRUE, knit = !chunks.like.whisker,
   chunks.like.whisker = FALSE, out.type = "shiny",
-  launch.browser = rstudio::viewer)
+  launch.browser = rstudio::viewer, use.commonmark = FALSE)
 }
 \description{
 View an extended rmd file

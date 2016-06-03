@@ -4,7 +4,8 @@
 \alias{parse.block.args}
 \title{Parse the name of an rmd block}
 \usage{
-parse.block.args(header, arg.str = NULL, add.type = TRUE, type = "")
+parse.block.args(header, arg.str = NULL, add.type = TRUE, type = "",
+  allow.unquoted.title = FALSE)
 }
 \description{
 Parse the name of an rmd block

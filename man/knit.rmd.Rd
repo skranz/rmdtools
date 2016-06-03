@@ -5,7 +5,8 @@
 \title{Knits the rmd txt}
 \usage{
 knit.rmd(text, envir = parent.frame(), fragment.only = TRUE, quiet = TRUE,
-  encoding = getOption("encoding"), html.table = TRUE, out.type = "html")
+  encoding = getOption("encoding"), html.table = TRUE, out.type = "html",
+  use.commonmark = FALSE)
 }
 \description{
 Knits the rmd txt

@@ -56,23 +56,80 @@ examples.get.whisker.with.type = function() {
   alpha_1 = 0,C = 0,alpha_2 = 0
 )
   replace.whisker.with.blocks(text, params)
+
+  replace.whiskers("{{a}} and {{b}}", list(a=5), eval=FALSE)
 }
 
-#' simply replace whiskers using a list of values
+#' replace whiskers using a list of values, with several options
 #' @export
-replace.whiskers <- function(str, values) {
+replace.whiskers = function(str, values=parent.frame(), eval=TRUE, signif.digits=NULL, vector.return.first = TRUE, pos=NULL, error.val = "`Error`", empty.val=NULL, use.whisker.render = FALSE, whisker.start = "{{", whisker.end = "}}") {
   restore.point("replace.whiskers")
-  values = as.list(values)
-  pos = str.blocks.pos(str,"{{","}}")
+  if (is.null(str)) return(str)
+
+  if (use.whisker.render) {
+    if (!is.null(signif.digits)) {
+      for (i in seq_along(valus)) {
+        if (is.numeric(values[[i]]))
+          values[[i]] = signif.or.round(values[[i]],signif.digits)
+      }
+    }
+    whisker.render(txt,args)
+  }
+
+  if (is.null(pos))
+    pos = str.blocks.pos(str,whisker.start,whisker.end)
   if (NROW(pos$outer)==0) return(str)
+
   s = substring(str, pos$inner[,1],pos$inner[,2])
-  unknown = setdiff(s, names(values))
-  values[unknown] = as.list(paste0("{{",unknown,"}}"))
-  vals = sapply(values[s], function(val) paste0(as.character(val), collapse="\n"))
-  res = str.replace.at.pos(str, pos$outer, vals)
+  if (eval) {
+    vals = lapply(s, function(su) {
+      if (!is.null(su)) {
+        res = try(eval(parse(text=su),values))
+        if (is(res,"try-error")) res = error.val
+      } else {
+        res = error.val
+      }
+      if (vector.return.first) {
+        return(unlist(res)[[1]])
+      } else {
+        paste0(as.character(res), collapse="\n")
+      }
+    })
+  } else {
+    values = as.list(values)
+
+    unknown = setdiff(s, names(values))
+    if (is.null(empty.val)) {
+      values[unknown] = as.list(paste0("{{",unknown,"}}"))
+    } else {
+      values[unknown] = empty.val
+    }
+    vals = sapply(values[s], function(val) {
+      if (vector.return.first) {
+        return(unlist(val)[[1]])
+      } else {
+        paste0(as.character(unlist(val)), collapse="\n")
+      }
+    })
+  }
+  if (!is.null(signif.digits)) {
+    for (i in seq_along(vals)) {
+      if (is.numeric(vals[[i]]))
+        vals[[i]] = signif.or.round(vals[[i]],signif.digits)
+    }
+  }
+
+  res = str.replace.at.pos(str, pos$outer, unlist(vals))
   res
 }
 
+#'
+#' @export
+signif.or.round = function(val, digits=3) {
+  if (any(val>10^digits))
+    return(round(val))
+  return(signif(val,digits))
+}
 
 #' evaluate whiskers and replace them in the text
 #' @export

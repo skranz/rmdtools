@@ -2,11 +2,14 @@
 % Please edit documentation in R/whisker.r
 \name{replace.whiskers}
 \alias{replace.whiskers}
-\title{simply replace whiskers using a list of values}
+\title{replace whiskers using a list of values, with several options}
 \usage{
-replace.whiskers(str, values)
+replace.whiskers(str, values = parent.frame(), eval = TRUE,
+  signif.digits = NULL, vector.return.first = TRUE, pos = NULL,
+  error.val = "`Error`", empty.val = NULL, use.whisker.render = FALSE,
+  whisker.start = "{{", whisker.end = "}}")
 }
 \description{
-simply replace whiskers using a list of values
+replace whiskers using a list of values, with several options
 }
 

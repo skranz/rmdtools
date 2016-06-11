@@ -213,25 +213,6 @@ is.true = function(val) {
   return(val)
 }
 
-read.as.utf8 = function(file, sep.lines=TRUE) {
-  text <- readLines(file)
-  Encoding(text) <- "UTF-8"
-  text
-}
-
-
-mark_utf8 = function(x) {
-  if (is.character(x)) {
-    Encoding(x) <- 'UTF-8'
-    return(x)
-  }
-  if (!is.list(x)) return(x)
-  attrs <- attributes(x)
-  res <- lapply(x, mark_utf8)
-  attributes(res) <- attrs
-  res
-}
-
 
 #' Like paste0 but returns an empty vector if some string is empty
 sc = function(..., sep="", collapse=NULL) {

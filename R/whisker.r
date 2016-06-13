@@ -58,6 +58,8 @@ examples.get.whisker.with.type = function() {
   replace.whisker.with.blocks(text, params)
 
   replace.whiskers("{{a}} and {{b}}", list(a=5), eval=FALSE)
+
+    replace.whiskers("{ x = {b=5}} {{a}}", list(a=5), eval=FALSE)
 }
 
 #' replace whiskers using a list of values, with several options
@@ -77,7 +79,7 @@ replace.whiskers = function(str, values=parent.frame(), eval=TRUE, signif.digits
   }
 
   if (is.null(pos))
-    pos = str.blocks.pos(str,whisker.start,whisker.end)
+    pos = whiskers.str.blocks.pos(str,whisker.start,whisker.end)
   if (NROW(pos$outer)==0) return(str)
 
   s = substring(str, pos$inner[,1],pos$inner[,2])
@@ -252,3 +254,70 @@ get.whiskers.with.type = function(text=paste0(readLines(file,warn = FALSE), coll
   df
 }
 
+
+whiskers.str.blocks.pos = function (str, start, end, ignore = NULL, ignore.start = ignore,
+    ignore.end = ignore, fixed = TRUE, fixed.start = fixed, fixed.end = fixed)
+{
+    restore.point("str.blocks.pos")
+    if (length(str) > 1)
+        stop("Not yet implemented for vectors of strings")
+    if (start != end) {
+        start.pos = str.locate.all(str, start, ignore = ignore.start,
+            fixed = fixed.start)[[1]]
+        end.pos = str.locate.all(str, end, ignore = ignore.end,
+            fixed = fixed.start)[[1]]
+        if (NROW(end.pos)>=NROW(start.pos)) {
+          start = start.pos[,1]
+          start = c(start, rep(start[length(start)], NROW(end.pos)-NROW(start.pos)))
+          pseudo.close = end.pos[,1] < start
+          end.pos = end.pos[!pseudo.close,,drop=FALSE]
+        }
+        if (NROW(start.pos) != NROW(end.pos)) {
+            print(paste("Error when finding ", start, end, "block in"))
+            print(str)
+            stop("Number of block starts and ends differs!")
+        }
+        n = NROW(start.pos)
+        if (n == 0)
+            return(list(inner = start.pos, outer = start.pos,
+                levels = c()))
+        pos.levels = rep(NA, n)
+        all = c(start.pos[, 2], end.pos[, 1])
+        ord = order(all)
+        ind = c(1:n, 1:n)[ord]
+        open = c(rep(1, n), rep(-1, n))[ord]
+        levels = cumsum(open)
+        pos.levels[ind[open == 1]] = levels[open == 1]
+        end.ord = rep(NA, n)
+        used.start = rep(FALSE, n)
+        for (i in 1:n) {
+            ind = which(start.pos[, 2] < end.pos[i, 1] & !used.start)
+            ind = ind[length(ind)]
+            used.start[ind] = TRUE
+            end.ord[i] = ind
+        }
+        end.pos[end.ord, ] = end.pos
+        return(list(outer = cbind(start.pos[, 1], end.pos[, 2]),
+            inner = cbind(start.pos[, 2] + 1, end.pos[, 1] -
+                1), levels = pos.levels))
+    }
+    else {
+        pos = str.locate.all(str, start, ignore = ignore.start,
+            fixed = fixed)[[1]]
+        n = NROW(pos)
+        if (n > 0) {
+            if ((n%%2) != 0)
+                stop(paste("Number of block starts and ends differs! Need even number of not ignored",
+                  start))
+            start.pos = pos[seq(1, n, by = 2), , drop = FALSE]
+            end.pos = pos[seq(2, n, by = 2), , drop = FALSE]
+            return(list(inner = cbind(start.pos[, 2] + 1, end.pos[,
+                1] - 1), outer = cbind(start.pos[, 1], end.pos[,
+                2]), levels = rep(1, n/2)))
+        }
+        else {
+            return(list(inner = start.pos, outer = start.pos,
+                levels = c()))
+        }
+    }
+}

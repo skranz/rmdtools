@@ -220,7 +220,7 @@ correct.hf.html = function(txt,hf=NULL, if.df=NULL) {
 
 #' Render a compiled rmd
 #' @export
-render.compiled.rmd = function(cr=NULL,txt = cr$body,envir=parent.frame(), fragment.only = FALSE, chunks=c("knit","eval")[1], out.type=if (is.null(cr$out.type)) "html" else cr$out.type ) {
+render.compiled.rmd = function(cr=NULL,txt = cr$body,envir=parent.frame(), fragment.only = FALSE, chunks=c("knit","eval")[1], out.type=if (is.null(cr$out.type)) "html" else cr$out.type, use.print="none" ) {
   restore.point("render.compiled.rmd")
 
   # First replace if df
@@ -284,7 +284,7 @@ render.compiled.rmd = function(cr=NULL,txt = cr$body,envir=parent.frame(), fragm
       txt = str.replace.at.pos(txt,pos = cbind(start,end),new = cr$hf$value[comp.val])
     }
     if (length(which(ph.comp.val))>0) {
-      txt = replace.whiskers(txt,values=cr$ph$value[ph.comp.val])
+      txt = replace.whiskers(txt,values=cr$ph$value[ph.comp.val], use.print=use.print)
     }
   }
 
@@ -368,13 +368,13 @@ render.value = function(val, out.type="html",...) {
   res
 }
 
-whiskered.html.to.list = function(txt, values, transform.txt.fun=HTML) {
+whiskered.html.to.list = function(txt, values, transform.txt.fun=HTML, use.print="none") {
   restore.point("whiskered.txt.to.list")
-  whiskered.txt.to.list(txt,values,transform.txt.fun)
+  whiskered.txt.to.list(txt,values,transform.txt.fun, use.print=use.print)
 }
 
 
-whiskered.txt.to.list = function(txt, values, transform.txt.fun=NULL) {
+whiskered.txt.to.list = function(txt, values, transform.txt.fun=NULL, use.print="none") {
   restore.point("whiskered.txt.to.list")
 
   if (length(values)==0) {
@@ -393,6 +393,19 @@ whiskered.txt.to.list = function(txt, values, transform.txt.fun=NULL) {
           stop("Mismatched {{ and }} in whiskered txt.")
       }
   })
+
+  if (use.print!="none") {
+    print.fun = eval(parse(text(paste0(use.print,"_",print))))
+    if (!is.null(transform.txt.fun)) {
+      outer.transform.txt.fun = transform.txt.fun
+      transform.txt.fun = function(txt) {
+        outer.transform.txt.fun(print.fun(txt))
+      }
+    } else {
+      transform.txt.fun = print.fun
+    }
+  }
+
   if (!is.null(transform.txt.fun))
     pieces[[1]] <- transform.txt.fun(pieces[[1]])
 

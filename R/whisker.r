@@ -64,13 +64,13 @@ examples.get.whisker.with.type = function() {
 
 #' replace whiskers using a list of values, with several options
 #' @export
-replace.whiskers = function(str, values=parent.frame(), eval=TRUE, signif.digits=NULL, vector.return.first = TRUE, pos=NULL, error.val = "`Error`", empty.val=NULL, use.whisker.render = FALSE, whisker.start = "{{", whisker.end = "}}") {
+replace.whiskers = function(str, values=parent.frame(), eval=TRUE, signif.digits=NULL, vector.return.first = use.print=="none", pos=NULL, error.val = "`Error`", empty.val=NULL, use.whisker.render = FALSE, whisker.start = "{{", whisker.end = "}}", use.print=c("none","knit","whisker")[1]) {
   restore.point("replace.whiskers")
   if (is.null(str)) return(str)
 
   if (use.whisker.render) {
     if (!is.null(signif.digits)) {
-      for (i in seq_along(valus)) {
+      for (i in seq_along(values)) {
         if (is.numeric(values[[i]]))
           values[[i]] = signif.or.round(values[[i]],signif.digits)
       }
@@ -87,14 +87,20 @@ replace.whiskers = function(str, values=parent.frame(), eval=TRUE, signif.digits
     vals = lapply(s, function(su) {
       if (!is.null(su)) {
         res = try(eval(parse(text=su),values))
-        if (is(res,"try-error")) res = error.val
+        if (is(res,"try-error")) {
+          res = error.val
+        }
       } else {
         res = error.val
       }
       if (vector.return.first) {
-        return(unlist(res)[[1]])
+        if(use.print == "none")
+          return(unlist(res)[[1]])
+        return(res[[1]])
       } else {
-        paste0(as.character(res), collapse="\n")
+        if (use.print == "none")
+          return(paste0(as.character(res), collapse="\n"))
+        return(res)
       }
     })
   } else {
@@ -107,13 +113,25 @@ replace.whiskers = function(str, values=parent.frame(), eval=TRUE, signif.digits
       values[unknown] = empty.val
     }
     vals = sapply(values[s], function(val) {
-      if (vector.return.first) {
-        return(unlist(val)[[1]])
+     if (vector.return.first) {
+        if(use.print == "none")
+          return(unlist(val)[[1]])
+        return(val[[1]])
       } else {
-        paste0(as.character(unlist(val)), collapse="\n")
+        if (use.print == "none")
+          return(paste0(as.character(unlist(val)), collapse="\n"))
+        return(res)
       }
     })
   }
+  if (use.print != "none") {
+    if (use.print == "whisker") {
+      vals = lapply(vals, whisker_print)
+    } else if (use.print == "knit") {
+      vals = lapply(vals, knit_print)
+    }
+  }
+
   if (!is.null(signif.digits)) {
     for (i in seq_along(vals)) {
       if (is.numeric(vals[[i]]))

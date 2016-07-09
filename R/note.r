@@ -22,7 +22,7 @@ get.note.block.spec = function() {
   list(
     is.hf = TRUE,
     libs = "shinyBS",
-    deps = list(htmlDependency("shinyBS", version="", src=c(href = "sbs"), meta = NULL, script = "shinyBS.js",stylesheet = "shinyBS.css"))
+    deps = list(htmlDependency("shinyBS", version=" ",  src=c(href = "sbs"), meta = NULL, script = "shinyBS.js",stylesheet = "shinyBS.css"))
   )
 }
 

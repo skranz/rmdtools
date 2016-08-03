@@ -1,3 +1,12 @@
+first.none.null = function(...) {
+  args = list(...)
+  for (val in args) {
+    if (!is.null(val)) return(val)
+  }
+  return(NULL)
+
+}
+
 #' Gets for each element the index of its type
 #' @param types a character vector of types
 #' @export

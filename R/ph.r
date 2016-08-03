@@ -1,3 +1,21 @@
+#' Evaluate placeholders in compiled rmd
+#' @export
+eval.placeholders = function(cr=NULL,envir = parent.frame(),ph=cr$ph, type=NULL, on.error=c("null","error","stop")[1], out.type= first.none.null(cr$out.type,"html"),...) {
+  restore.point("eval.placeholders")
+
+  if (is.null(cr[["ph"]])) return(cr)
+  if (!is.null(type)) {
+    rows = which(cr$ph$type==type)
+  } else {
+    rows = seq_len(NROW(cr$ph))
+  }
+  cr$ph$value[rows] = lapply(rows, function(row) {
+    eval.placeholder(ph=cr$ph[row,], envir=envir, on.error=on.error, out.type=out.type,cr=cr,...)
+  })
+  cr
+
+}
+
 #' Make a info for a placeholder object
 #' @export
 make.placeholder.info = function(txt, type, form) {
@@ -7,7 +25,7 @@ make.placeholder.info = function(txt, type, form) {
   stop(paste0("unknown placeholder form: ", form))
 }
 
-eval.placeholder = function(ph, envir = parent.frame(), chunks="knit", dir=getwd(),out.type="html",cr=NULL, ...) {
+eval.placeholder = function(ph, envir = parent.frame(), chunks="knit", dir=getwd(),out.type="html",cr=NULL, on.error=c("null","error","stop")[1], ...) {
   restore.point("eval.placeholder")
 
   if (ph$type == "chunk" & chunks=="knit") {
@@ -20,8 +38,14 @@ eval.placeholder = function(ph, envir = parent.frame(), chunks="knit", dir=getwd
   }
 
   if (is(res,"try-error")) {
-    value = paste0("`Error when evaluating ", ph$type, " ", ph$txt, ":\n\n", as.character(res),"`")
-    attr(value,"value.class") = "error"
+    if (on.error == "error") {
+      value = paste0("`Error when evaluating ", ph$type, " ", ph$txt, ":\n\n", as.character(res),"`")
+      attr(value,"value.class") = "error"
+    } else if (on.error == "stop") {
+      stop(as.character(res))
+    } else {
+      value = NULL
+    }
   } else {
     value = res
     #attr(value,"value.class") = class(value)[1]
@@ -36,6 +60,8 @@ find.placeholders = function(txt) {
 }
 
 set.rmd.placeholders = function(txt,whisker.prefix="{{", whisker.postfix="}}", chunks=TRUE, blocks=TRUE, whiskers=TRUE, ignore.block.types="if", add.info=TRUE) {
+  restore.point("set.rmd.placeholders")
+
   df.li = vector("list",3)
 
   if (whiskers) {
@@ -103,9 +129,11 @@ rmd.chunks.to.placeholders = function(txt,whisker.prefix="{{", whisker.postfix="
 
 
 
-#' Replace whiskers with placeholderss of the form {{id}}
+#' Replace whiskers with placeholders of the form {{id}}
 #' @export
 rmd.whiskers.to.placeholders = function(txt, whisker.prefix="{{", whisker.postfix="}}", add.info=TRUE) {
+  restore.point("rmd.whiskers.to.placeholders")
+
   multi.line = length(txt)>1
 
   if (multi.line) txt = merge.lines(txt)

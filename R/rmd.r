@@ -1,4 +1,24 @@
 
+examples.compile.rmd = function() {
+  setwd("D:/libraries/rmdtools/test")
+  #view.rmd("test.Rmd", envir=list(x=10))
+
+  options(warn=2)
+  cr = compile.rmd(file="test.Rmd", out.type = "html")
+  cr = eval.placeholders(cr, envir = list(x=0, today=Sys.Date()))
+  ph = cr$ph
+
+  html = render.compiled.rmd(cr, envir = list(x=0))
+  ui = render.compiled.rmd(cr, envir = list(x=0))
+  view.html(ui = ui)
+  view.html(text=html)
+
+  view.rmd(ui=rmd)
+
+  txt
+  ui = render.compiled.rmd(cr,envir = list(x=15), out.type = "shiny")
+}
+
 
 #' View an extended rmd file
 #' @export
@@ -43,20 +63,9 @@ view.rmd = function(file=NULL, text=readLines(file,warn = FALSE), envir=list(), 
   return(invisible())
 }
 
-examples.compile.rmd = function() {
-  setwd("D:/libraries/rmdtools/test")
-  view.rmd("test.Rmd", envir=list(x=10))
-
-  cr = compile.rmd(file="test.Rmd")
-
-  txt = render.compiled.rmd(cr, envir = list(x=10))
-  txt
-  ui = render.compiled.rmd(cr,envir = list(x=15), out.type = "shiny")
-}
-
 #' Main function to compile rmd to html
 #' @export
-compile.rmd = function(file=NULL, text=readLines(file,warn = FALSE), envir=list(), if.blocks = c("ph","render", "ignore")[1],  blocks=c("ph","render","ignore")[1], whiskers=c("ph","render","render.as.text", "ignore")[1], chunks=c("ph","knit", "render","ignore")[1], start.line="<!-- START -->",end.line = "<!-- END -->", set.utf8=TRUE, out.type = "html", fragment.only=FALSE, whiskers.call.list=NULL, blocks.call.list=NULL, add.info=TRUE, use.commonmark=use.commonmark) {
+compile.rmd = function(file=NULL, text=readLines(file,warn = FALSE), envir=list(), if.blocks = c("ph","render", "ignore")[1],  blocks=c("ph","render","ignore")[1], whiskers=c("ph","render","render.as.text", "ignore")[1], chunks=c("ph","knit", "render","ignore")[1], start.line="<!-- START -->",end.line = "<!-- END -->", set.utf8=TRUE, out.type = "html", fragment.only=FALSE, whiskers.call.list=NULL, blocks.call.list=NULL, add.info=TRUE, use.commonmark=FALSE) {
 
   restore.point("compile.rmd")
 
@@ -218,9 +227,11 @@ correct.hf.html = function(txt,hf=NULL, if.df=NULL) {
   txt
 }
 
+
+
 #' Render a compiled rmd
 #' @export
-render.compiled.rmd = function(cr=NULL,txt = cr$body,envir=parent.frame(), fragment.only = FALSE, chunks=c("knit","eval")[1], out.type=if (is.null(cr$out.type)) "html" else cr$out.type, use.print="none" ) {
+render.compiled.rmd = function(cr=NULL,txt = cr$body,envir=parent.frame(), fragment.only = FALSE, chunks=c("knit","eval")[1], out.type=if (is.null(cr$out.type)) "html" else cr$out.type, use.print="none", overwrite.values = FALSE, on.error="error") {
   restore.point("render.compiled.rmd")
 
   # First replace if df
@@ -237,13 +248,16 @@ render.compiled.rmd = function(cr=NULL,txt = cr$body,envir=parent.frame(), fragm
 
     # Need to think of how to deal with value.class
     #no.val = cr$ph$value.class == "" | cr$ph$value.class == "error"
-    no.val = rep(TRUE, length(phs))
-
-    comp.val = ph.comp.val = (has.ph & no.val)
+    if (overwrite.values) {
+      no.val = rep(TRUE, length(phs))
+    } else {
+      no.val = sapply(cr$ph$value, is.null,USE.NAMES = FALSE)
+    }
+    comp.val = (has.ph & no.val)
     ind = 1
     new.values = lapply(which(comp.val), function(ind) {
       restore.point("inner.ph")
-      val = eval.placeholder(cr$ph[ind,],envir=envir, chunks=chunks, out.type=cr$out.type, cr=cr)
+      val = eval.placeholder(cr$ph[ind,],envir=envir, chunks=chunks, out.type=cr$out.type, cr=cr, on.error=on.error)
       render.value(val, out.type=out.type)
     })
     cr$ph$value[comp.val] = new.values
@@ -258,7 +272,7 @@ render.compiled.rmd = function(cr=NULL,txt = cr$body,envir=parent.frame(), fragm
   comp.val = !is.na(head.loc[,1])
   new.values = lapply(which(comp.val), function(ind) {
     restore.point("ufz8be7f47fb3w6xq")
-    val = eval.hf(txt = substring(txt, head.loc[ind,2]+1,foot.loc[ind,1]-1 ), cr$hf[ind,],envir=envir, out.type=cr$out.type, cr=cr)
+    val = eval.hf(txt = substring(txt, head.loc[ind,2]+1,foot.loc[ind,1]-1 ), cr$hf[ind,],envir=envir, out.type=out.type, cr=cr)
     render.value(val, out.type=out.type)
   })
   cr$hf$value[comp.val] = new.values
@@ -283,8 +297,8 @@ render.compiled.rmd = function(cr=NULL,txt = cr$body,envir=parent.frame(), fragm
     if (length(start)>0) {
       txt = str.replace.at.pos(txt,pos = cbind(start,end),new = cr$hf$value[comp.val])
     }
-    if (length(which(ph.comp.val))>0) {
-      txt = replace.whiskers(txt,values=cr$ph$value[ph.comp.val], use.print=use.print)
+    if (length(which(has.ph))>0) {
+      txt = replace.whiskers(txt,values=cr$ph$value[has.ph], use.print=use.print)
     }
   }
 

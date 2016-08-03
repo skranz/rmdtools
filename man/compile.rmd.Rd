@@ -11,7 +11,7 @@ compile.rmd(file = NULL, text = readLines(file, warn = FALSE),
   "ignore")[1], start.line = "<!-- START -->", end.line = "<!-- END -->",
   set.utf8 = TRUE, out.type = "html", fragment.only = FALSE,
   whiskers.call.list = NULL, blocks.call.list = NULL, add.info = TRUE,
-  use.commonmark = use.commonmark)
+  use.commonmark = FALSE)
 }
 \description{
 Main function to compile rmd to html

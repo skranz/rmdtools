@@ -26,7 +26,7 @@ get.note.block.spec = function() {
   )
 }
 
-eval.note.block = function(txt,envir=parent.frame(), out.type="html",cr=NULL,info=NULL, render.txt = !is.null(cr), has.header=TRUE, ...) {
+eval.note.block = function(txt,envir=parent.frame(), out.type=first.none.null(cr$out.type,"html"),cr=NULL,info=NULL, render.txt = !is.null(cr), has.header=TRUE, ...) {
   restore.point("eval.note.block")
   if (is.null(info)) {
     info = make.note.block.info(txt)
@@ -39,6 +39,7 @@ eval.note.block = function(txt,envir=parent.frame(), out.type="html",cr=NULL,inf
   #render.txt = FALSE
   if (render.txt) {
     content = render.compiled.rmd(cr=cr,txt=txt, envir=envir, out.type=out.type)
+    if (out.type == "html" | is.character(content)) content = HTML(content)
   } else {
     content = HTML(paste0(txt, collapse="\n"))
   }

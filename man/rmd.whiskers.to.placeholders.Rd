@@ -2,12 +2,12 @@
 % Please edit documentation in R/ph.r
 \name{rmd.whiskers.to.placeholders}
 \alias{rmd.whiskers.to.placeholders}
-\title{Replace whiskers with placeholderss of the form {{id}}}
+\title{Replace whiskers with placeholders of the form {{id}}}
 \usage{
 rmd.whiskers.to.placeholders(txt, whisker.prefix = "{{",
   whisker.postfix = "}}", add.info = TRUE)
 }
 \description{
-Replace whiskers with placeholderss of the form {{id}}
+Replace whiskers with placeholders of the form {{id}}
 }
 

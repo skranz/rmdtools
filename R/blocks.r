@@ -403,7 +403,7 @@ adapt.hf.blocks = function(txt, block.df=NULL, out.type="html",only.types=c("if"
 }
 
 
-eval.hf = function(txt, hf, envir = parent.frame(), dir=getwd(),out.type="html",cr=NULL, ...) {
+eval.hf = function(txt, hf, envir = parent.frame(), dir=getwd(),out.type=first.non.null(cr$out.type,"html"),cr=NULL, ...) {
   restore.point("eval.hf")
 
   fun = eval(parse(text=paste0("eval.", hf$type,".block")))

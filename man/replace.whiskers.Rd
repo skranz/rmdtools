@@ -5,9 +5,10 @@
 \title{replace whiskers using a list of values, with several options}
 \usage{
 replace.whiskers(str, values = parent.frame(), eval = TRUE,
-  signif.digits = NULL, vector.return.first = TRUE, pos = NULL,
-  error.val = "`Error`", empty.val = NULL, use.whisker.render = FALSE,
-  whisker.start = "{{", whisker.end = "}}")
+  signif.digits = NULL, vector.return.first = use.print == "none",
+  pos = NULL, error.val = "`Error`", empty.val = NULL,
+  use.whisker.render = FALSE, whisker.start = "{{", whisker.end = "}}",
+  use.print = c("none", "knit", "whisker")[1])
 }
 \description{
 replace whiskers using a list of values, with several options

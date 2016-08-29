@@ -178,6 +178,8 @@ replace.if.blocks.from.if.df = function(txt, envir=parent.frame(), warn.if.na=TR
 
   start = match(if.df$head,txt)
   end = match(if.df$foot, txt)
+  #writeLines(txt,"test.txt")
+
   rows = which(!is.na(start))
   if (NROW(rows)==0) return(txt)
 

@@ -44,7 +44,7 @@ remove.rmd.chunks = function(rmd, chunk.names) {
 #'
 #' @param rmd the rmd code as character vector, one element per line
 #' @export
-find.rmd.chunks = function(rmd) {
+find.rmd.chunks = function(rmd, add.code = FALSE) {
   restore.point("find.rmd.chunks")
   chunk.start = str.starts.with(rmd,"```{r")
   chunk.end = which(str.starts.with(rmd,"```") & !chunk.start)
@@ -52,8 +52,15 @@ find.rmd.chunks = function(rmd) {
   chunk.end = internal.remove.verbatim.end.chunks(chunk.start,chunk.end)
 
   names = parse.chunk.names(rmd[chunk.start])
-  data.frame(chunk.name=names,start=chunk.start, end=chunk.end)
+  df = data.frame(chunk.name=names,start=chunk.start, end=chunk.end)
+  if (add.code) {
+    df$code = sapply(seq_len(NROW(df)), function(r) {
+      paste0(rmd[(df$start[r]+1):(df$end[r]-1)], collapse="\n")
+    })
+  }
+  df
 }
+
 
 
 internal.remove.verbatim.end.chunks = function(chunk.start, chunk.end) {

@@ -4,7 +4,7 @@
 \alias{find.rmd.chunks}
 \title{Find the start and end lines of all rmd chunks}
 \usage{
-find.rmd.chunks(rmd)
+find.rmd.chunks(rmd, add.code = FALSE)
 }
 \arguments{
 \item{rmd}{the rmd code as character vector, one element per line}

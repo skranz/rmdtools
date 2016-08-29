@@ -17,7 +17,10 @@ parse.hashdot.yaml = function(txt, hashdot = "#. ",...) {
   li
 }
 
-split.text.in.startline.blocks = function(txt, start.with = NULL, block.lines = NULL, add.start=TRUE, merge.lines=TRUE) {
+#' Splits a text vector into different blocks by a start line token
+#' @return a data frame
+#' @export
+split.by.line.start = split.text.in.startline.blocks = function(txt, start.with = NULL, block.lines = NULL, add.start=TRUE, merge.lines=TRUE) {
   restore.point("split.text.in.blocks")
 
   if (length(txt)==0) return(NULL)

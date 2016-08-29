@@ -25,6 +25,8 @@ make.placeholder.info = function(txt, type, form) {
   stop(paste0("unknown placeholder form: ", form))
 }
 
+#' Evaluate a placeholder and return its value
+#' @export
 eval.placeholder = function(ph, envir = parent.frame(), chunks="knit", dir=getwd(),out.type="html",cr=NULL, on.error=c("null","error","stop")[1], ...) {
   restore.point("eval.placeholder")
 
@@ -152,7 +154,7 @@ rmd.whiskers.to.placeholders = function(txt, whisker.prefix="{{", whisker.postfi
     txt = s,
     info = lapply(s, make.whisker.info),
     #value.class = "",
-    value = vector("list",NROW(df))
+    value = vector("list",NROW(id))
   )
   names(ph$value) = ph$id
 

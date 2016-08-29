@@ -6,7 +6,7 @@
 \usage{
 eval.placeholders(cr = NULL, envir = parent.frame(), ph = cr$ph,
   type = NULL, on.error = c("null", "error", "stop")[1],
-  out.type = "html", ...)
+  out.type = first.none.null(cr$out.type, "html"), ...)
 }
 \description{
 Evaluate placeholders in compiled rmd

@@ -69,6 +69,8 @@ compile.rmd = function(file=NULL, text=readLines(file,warn = FALSE), envir=list(
 
   restore.point("compile.rmd")
 
+  if (length(text) == 1)
+    text = sep.lines(text)
   if (set.utf8) {
     Encoding(text) = "UTF8"
     text = mark_utf8(text)
@@ -138,10 +140,16 @@ compile.rmd = function(file=NULL, text=readLines(file,warn = FALSE), envir=list(
     if (out.type == "html" | out.type == "shiny") {
       text = gsub("&lt;!&ndash;html_preserve&ndash;&gt;","",text, fixed=TRUE)
       text = gsub("&lt;!&ndash;/html_preserve&ndash;&gt;","",text, fixed=TRUE)
+      text = gsub("&lt;!--","<!--",text, fixed=TRUE)
+      text = gsub("--&gt;","-->",text, fixed=TRUE)
     }
 
   } else if (out.type=="html" | out.type == "shiny") {
     text = md2html(text, fragment.only=fragment.only,use.commonmark=use.commonmark)
+    if (!use.commonmark) {
+      text = gsub("&lt;!--","<!--",text, fixed=TRUE)
+      text = gsub("--&gt;","-->",text, fixed=TRUE)
+    }
   }
 
   body.start = NA
@@ -264,6 +272,18 @@ render.compiled.rmd = function(cr=NULL,txt = cr$body,envir=parent.frame(), fragm
     #cr$ph$value.class[comp.val] = sapply(new.values, function(val) attr(val, "value.class"))
   }
 
+  restore.point("jdkbfuifuriufbb")
+  # newly entered
+  # render atomic whiskers directly into text
+  # otherwise too many newlines and paragraphs will
+  # be entered
+  rows = which(cr$ph$type == "whisker" & sapply(cr$ph$value, is.atomic))
+  if (length(rows)>0) {
+    li = cr$ph$value[rows]
+    names(li) = cr$ph$id[rows]
+    txt = rmdtools::replace.whiskers(txt, li,eval = FALSE)
+  }
+
 
   # Let us search for all hf
   head.loc = str.locate.first(txt,cr$hf$head, fixed = TRUE)
@@ -289,7 +309,7 @@ render.compiled.rmd = function(cr=NULL,txt = cr$body,envir=parent.frame(), fragm
       txt = str.replace.at.pos(txt,pos = cbind(start,end),new = paste0("{{",cr$hf$id[comp.val],"}}"))
 
     }
-    vals = c(cr$ph$value,cr$hf$value)
+    vals = c(cr$ph$value[has.ph],cr$hf$value)
     li = whiskered.html.to.list(txt, vals)
     return(tagList(li))
   } else {
@@ -352,6 +372,7 @@ cat.rmd.params = function(file=NULL, text=readLines(file,warn = FALSE), use.bloc
   cat(str)
 }
 
+#' export
 render.value = function(val, out.type="html",...) {
   restore.point("render.value")
 

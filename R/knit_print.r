@@ -2,7 +2,7 @@
 #'
 #' @export
 table.knit_print.data.frame = function(x, table.max.rows=100, round.digits=8, signif.digits=8, html.data.frame=TRUE, show.col.tooltips=TRUE, col.tooltips=NULL, output="html", options=NULL, ...) {
-  restore.point("rtutor.knit_print.data.frame")
+  restore.point("table.knit_print.data.frame")
 
   # chunk options have precedent over passed arguments
   copy.non.null.fields(dest=environment(), source=options, fields=c("table.max.rows","round.digits","signif.digits","html.data.frame","show.col.tooltips"))
@@ -30,7 +30,7 @@ table.knit_print.data.frame = function(x, table.max.rows=100, round.digits=8, si
 
   } else {
     if (html.data.frame) {
-      html = RTutor:::html.table(x,round.digits=round.digits, signif.digits=signif.digits, col.tooltips=col.tooltips, ...)
+      html = html.table(x,round.digits=round.digits, signif.digits=signif.digits, col.tooltips=col.tooltips, ...)
     } else {
       restore.point("ndjhdbfdub")
 

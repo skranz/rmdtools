@@ -27,11 +27,11 @@ make.placeholder.info = function(txt, type, form) {
 
 #' Evaluate a placeholder and return its value
 #' @export
-eval.placeholder = function(ph, envir = parent.frame(), chunks="knit", dir=getwd(),out.type="html",cr=NULL, on.error=c("null","error","stop")[1], ...) {
+eval.placeholder = function(ph, envir = parent.frame(), chunks="knit", dir=getwd(),out.type="html",cr=NULL, on.error=c("null","error","stop")[1], use.commonmark=TRUE, ...) {
   restore.point("eval.placeholder")
 
   if (ph$type == "chunk" & chunks=="knit") {
-    res = try(knit.chunk(ph$txt,envir=envir, knit.dir=dir,out.type=out.type))
+    res = try(knit.chunk(ph$txt,envir=envir, knit.dir=dir,out.type=out.type, use.commonmark=use.commonmark))
   } else if (ph$form == "block") {
     fun = eval(parse(text=paste0("eval.", ph$type,".block")))
     res = fun(txt=ph$txt,envir=envir,out.type=out.type,chunk=chunk, info=ph$info[[1]], cr=cr)

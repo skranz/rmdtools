@@ -239,7 +239,7 @@ correct.hf.html = function(txt,hf=NULL, if.df=NULL) {
 
 #' Render a compiled rmd
 #' @export
-render.compiled.rmd = function(cr=NULL,txt = cr$body,envir=parent.frame(), fragment.only = FALSE, chunks=c("knit","eval")[1], out.type=if (is.null(cr$out.type)) "html" else cr$out.type, use.print="none", overwrite.values = FALSE, on.error="error") {
+render.compiled.rmd = function(cr=NULL,txt = cr$body,envir=parent.frame(), fragment.only = FALSE, chunks=c("knit","eval")[1], out.type=if (is.null(cr$out.type)) "html" else cr$out.type, use.print="none", overwrite.values = FALSE, on.error="error", use.commonmark=TRUE) {
   restore.point("render.compiled.rmd")
 
   # First replace if df
@@ -265,7 +265,7 @@ render.compiled.rmd = function(cr=NULL,txt = cr$body,envir=parent.frame(), fragm
     ind = 1
     new.values = lapply(which(comp.val), function(ind) {
       restore.point("inner.ph")
-      val = eval.placeholder(cr$ph[ind,],envir=envir, chunks=chunks, out.type=cr$out.type, cr=cr, on.error=on.error)
+      val = eval.placeholder(cr$ph[ind,],envir=envir, chunks=chunks, out.type=cr$out.type, cr=cr, on.error=on.error, use.commonmark=use.commonmark)
       render.value(val, out.type=out.type)
     })
     cr$ph$value[comp.val] = new.values

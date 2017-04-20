@@ -15,7 +15,19 @@ get.block.types.df = function(types) {
 }
 
 get.block.spec = function(type) {
+  fun = paste0("get.",type,".block.spec")
+  if (!exists(fun, mode="function"))
+    return(get.default.block.spec(type))
+
   do.call(paste0("get.",type,".block.spec"),list())
+}
+
+get.default.block.spec = function(type) {
+  list(
+    is.hf = FALSE,
+    libs = NULL,
+    deps = list()
+  )
 }
 
 
@@ -351,7 +363,7 @@ parse.block.args = function(header, arg.str=NULL, add.type = TRUE, type = "", al
 }
 
 
-make.block.info = function(txt, type=NULL, arg.str) {
+make.block.info = function(txt, type=NULL, arg.str=NULL) {
   restore.point("make.block.info")
 
   if (is.null(type)) {
@@ -359,10 +371,37 @@ make.block.info = function(txt, type=NULL, arg.str) {
     header = txt[1]
     type = str.trim(str.between(txt,"#< "," "))
   }
+  fun.name = paste0("make.",type,".block.info")
+  if (!exists(fun.name, mode="function")) {
+    return(default.block.info(type=type,txt=txt, arg.str=arg.str))
+  }
+
 
   fun = eval(parse(text=paste0("make.",type,".block.info")))
   fun(txt=txt, type=type, arg.str=arg.str)
 }
+
+default.block.info = function(type, txt,id=NULL,arg.str=NULL,...) {
+  restore.point("default.block.info")
+  if (length(txt)==1) txt = sep.lines(txt)
+  header = txt[1]
+
+  if (is.null(type)) type="block"
+  if (is.null(id)) {
+    id = paste0(type,"_",random.string())
+  }
+  #rmd = paste0(txt[c(-1,-length(txt))], collapse="\n")
+  #html = md2html(text=rmd,fragment.only=TRUE)
+  list(
+    id = id,
+    header = header,
+    inner.txt = if (length(txt) >1) txt[-unique(c(1,length(txt)))] else (NULL)
+    #title="",
+    #rmd = rmd,
+    #html = html
+  )
+}
+
 
 #' Adapt header and footer of if blocks for output format
 #' and parse already the if condition for faster runtime evaluation

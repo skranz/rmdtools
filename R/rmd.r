@@ -3,8 +3,9 @@ examples.compile.rmd = function() {
   setwd("D:/libraries/rmdtools/test")
   #view.rmd("test.Rmd", envir=list(x=10))
 
+
   options(warn=2)
-  cr = compile.rmd(file="test.Rmd", out.type = "html")
+  cr = compile.rmd(file="test.Rmd", out.type = "shiny")
   cr = eval.placeholders(cr, envir = list(x=0, today=Sys.Date()))
   ph = cr$ph
 
@@ -372,7 +373,9 @@ cat.rmd.params = function(file=NULL, text=readLines(file,warn = FALSE), use.bloc
   cat(str)
 }
 
-#' export
+#'Render a value in a format specified by out.type
+#'
+#'@export
 render.value = function(val, out.type="html",...) {
   restore.point("render.value")
 

@@ -2,11 +2,11 @@
 % Please edit documentation in R/rmd.r
 \name{render.value}
 \alias{render.value}
-\title{export}
+\title{Render a value in a format specified by out.type}
 \usage{
 render.value(val, out.type = "html", ...)
 }
 \description{
-export
+Render a value in a format specified by out.type
 }
 

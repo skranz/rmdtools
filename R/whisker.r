@@ -339,3 +339,52 @@ whiskers.str.blocks.pos = function (str, start, end, ignore = NULL, ignore.start
         }
     }
 }
+
+#' Subtitutes whiskers and pastes string parts together
+#'
+#' Unlike replace whiskers, returns a string vector if whiskers evaluate as vectors
+#' Cannot deal with nested whiskers
+#'
+#' @export
+paste.whiskers = function(str,values=parent.frame(), eval=TRUE, signif.digits=NULL,error.val = "`Error`", empty.val=NULL,whisker.start = "{{", whisker.end = "}}", sep="", collapse=NULL, return.list = FALSE) {
+	restore.point("paste.whiskers")
+
+	sv = str.split(str,"(\\{\\{)|(\\}\\})",fixed=FALSE)[[1]]
+
+	start.whisker = str.starts.with(str,"{{")
+
+	whisker.pos = seq(1+!start.whisker,length(sv),by=2)
+
+	s = sv[whisker.pos]
+  if (eval) {
+    vals = lapply(s, function(su) {
+      if (!is.null(su)) {
+        res = try(eval(parse(text=su),values))
+        if (is(res,"try-error")) {
+          res = error.val
+        }
+      } else {
+        res = error.val
+      }
+      return(res)
+    })
+  } else {
+    values = as.list(values)
+    unknown = setdiff(s, names(values))
+    if (is.null(empty.val)) {
+      values[unknown] = as.list(paste0("{{",unknown,"}}"))
+    } else {
+      values[unknown] = empty.val
+    }
+    vals = values
+  }
+
+	res = as.list(sv)
+	res[whisker.pos] = vals
+	if (return.list) {
+		return(res)
+	}
+	do.call(paste0, c(res,list(sep=sep, collapse=collapse)))
+}
+
+

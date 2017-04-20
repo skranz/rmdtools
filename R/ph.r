@@ -1,3 +1,21 @@
+
+#' Reverses whisker placeholders by their original whiskers
+#'
+#' May be useful if blocks evaluate whiskers themselves or
+#' after rmd to html transformation
+#' @export
+reverse.whisker.placeholders = function(txt,ph=cr$ph,cr=NULL)  {
+	ph = ph[ph$type == "whisker",]
+  # replace ph with original text
+	repl = as.list(paste0("{{",ph$txt,"}}"))
+	names(repl) = ph$id
+	txt = replace.whiskers(txt, repl,eval = FALSE)
+  txt
+
+}
+
+
+
 #' Evaluate placeholders in compiled rmd
 #' @export
 eval.placeholders = function(cr=NULL,envir = parent.frame(),ph=cr$ph, type=NULL, on.error=c("null","error","stop")[1], out.type= first.none.null(cr$out.type,"html"),...) {
@@ -30,11 +48,12 @@ make.placeholder.info = function(txt, type, form) {
 eval.placeholder = function(ph, envir = parent.frame(), chunks="knit", dir=getwd(),out.type="html",cr=NULL, on.error=c("null","error","stop")[1], use.commonmark=TRUE, ...) {
   restore.point("eval.placeholder")
 
-  if (ph$type == "chunk" & chunks=="knit") {
+  # chunks with output shiny or eval will always be evaluated
+  if (ph$type == "chunk" & chunks=="knit" & !isTRUE(ph$info[[1]]$args$results %in% c("shiny","eval"))) {
     res = try(knit.chunk(ph$txt,envir=envir, knit.dir=dir,out.type=out.type, use.commonmark=use.commonmark))
   } else if (ph$form == "block") {
     fun = eval(parse(text=paste0("eval.", ph$type,".block")))
-    res = fun(txt=ph$txt,envir=envir,out.type=out.type,chunk=chunk, info=ph$info[[1]], cr=cr)
+    res = fun(txt=ph$txt,envir=envir,out.type=out.type, info=ph$info[[1]], cr=cr)
   } else {
     res = try(eval(ph$info[[1]]$expr, envir), silent=TRUE)
   }
@@ -187,18 +206,19 @@ rmd.blocks.to.placeholders = function(txt, block.df=NULL, whisker.prefix="{{", w
   if (NROW(block.df)==0) {
     return(list(txt=txt, ph=NULL))
   }
-  id = paste0("block_", block.df$type,"_",block.df$start,"_",rand.random.string(NROW(block.df)))
+  id = paste0("block_", block.df$type,"_",block.df$start,"_",random.string(NROW(block.df)))
   ph = data_frame(
     id = id,
     type = block.df$type,
     form = "block",
     txt = get.blocks.txt(txt, block.df, inner=FALSE),
-    info = lapply(1:NROW(ph), function(row) {
-      make.block.info(txt = ph$txt[row],type=ph$type[row])
-    }),
     #value.class = "",
     value = vector("list",NROW(df))
   )
+  ph$info = lapply(1:NROW(ph), function(row) {
+    make.block.info(txt = ph$txt[row],type=ph$type[row])
+  })
+
   names(ph$value) = ph$id
 
   txt = replace.blocks.txt(txt, paste0(whisker.prefix,id, whisker.postfix), block.df, del.rows.na=del.rows.na)

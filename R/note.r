@@ -49,8 +49,6 @@ eval.note.block = function(txt,envir=parent.frame(), out.type=first.none.null(cr
 
 }
 
-#' extract #< if blocks from a rmd txt
-#' @export
 compile.note.block.to.tag = function(txt, envir=parent.frame(), info=NULL) {
   restore.point("compile.note.block.to.html")
   if (is.null(info)) {
@@ -60,13 +58,10 @@ compile.note.block.to.tag = function(txt, envir=parent.frame(), info=NULL) {
   ui
 }
 
-#' extract #< if blocks from a rmd txt
-#' @export
 compile.note.block.to.html = function(txt, envir=parent.frame(), info=NULL) {
   restore.point("compile.note.block.to.html")
   as.character(compile.note.block.to.tag(txt, envir, info))
 }
-
 
 make.note.block.info = function(txt,id=NULL,...) {
   restore.point("make.note.block.info")

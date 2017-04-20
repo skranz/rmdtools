@@ -6,7 +6,7 @@
 \usage{
 eval.placeholder(ph, envir = parent.frame(), chunks = "knit",
   dir = getwd(), out.type = "html", cr = NULL, on.error = c("null",
-  "error", "stop")[1], ...)
+  "error", "stop")[1], use.commonmark = TRUE, ...)
 }
 \description{
 Evaluate a placeholder and return its value

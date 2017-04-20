@@ -7,7 +7,7 @@
 render.compiled.rmd(cr = NULL, txt = cr$body, envir = parent.frame(),
   fragment.only = FALSE, chunks = c("knit", "eval")[1], out.type = if
   (is.null(cr$out.type)) "html" else cr$out.type, use.print = "none",
-  overwrite.values = FALSE, on.error = "error")
+  overwrite.values = FALSE, on.error = "error", use.commonmark = TRUE)
 }
 \description{
 Render a compiled rmd

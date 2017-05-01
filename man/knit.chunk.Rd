@@ -6,7 +6,8 @@
 \usage{
 knit.chunk(text, envir = parent.frame(), fragment.only = TRUE,
   quiet = TRUE, encoding = getOption("encoding"), html.table = TRUE,
-  out.type = "html", knit.dir = tempdir(), use.commonmark = TRUE)
+  out.type = "html", knit.dir = tempdir(), use.commonmark = TRUE,
+  deps.action = c("add", "ignore")[1], args = NULL, code = NULL)
 }
 \description{
 Does not create /figure subfolder in current wd

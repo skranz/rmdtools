@@ -2,8 +2,10 @@
 #'
 #' Does not create /figure subfolder in current wd
 #' @export
-knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE, encoding = getOption("encoding"), html.table = TRUE, out.type="html", knit.dir=tempdir(), use.commonmark = TRUE) {
+knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE, encoding = getOption("encoding"), html.table = TRUE, out.type="html", knit.dir=tempdir(), use.commonmark = TRUE, deps.action = c("add","ignore")[1], args=NULL, code=NULL) {
   restore.point("knit.chunk")
+
+  text = sep.lines(text)
 
   if (is.list(envir)) {
     envir =list2env(envir)
@@ -18,7 +20,16 @@ knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE
     .GlobalEnv$knit_print.data.frame = table.knit_print.data.frame
   }
 
-  md = knitr::knit(text = sep.lines(text), envir = envir, encoding = "UTF8", quiet = quiet)
+  old.rmarkdown.pandoc.to = opts_knit$get("rmarkdown.pandoc.to")
+  if (out.type %in% c("html","shiny"))
+    opts_knit$set(rmarkdown.pandoc.to="html")
+
+
+  md = knitr::knit(text = text, envir = envir, encoding = "UTF8", quiet = quiet)
+
+  meta = knit_meta(clean=FALSE)
+
+  opts_knit$set(rmarkdown.pandoc.to=old.rmarkdown.pandoc.to)
 
   if (html.table) {
     if (!is.null(old.printer)) {
@@ -27,14 +38,43 @@ knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE
       suppressWarnings(rm("knit_print.data.frame",envir=.GlobalEnv))
     }
   }
-
-  if (out.type =="md" | out.type == "rmd") return(md)
+  if (out.type =="md" | out.type=="rmd") return(md)
 
   #writeClipboard(html)
   html = md2html(text=md, fragment.only=fragment.only, use.commonmark = use.commonmark)
-  if (out.type == "shiny") return(HTML(html))
+
+
+  is.dep = unlist(lapply(meta, function(el) is(el,"html_dependency")))
+  deps = meta[is.dep]
+
+
+  if (out.type == "shiny") {
+    ui = HTML(html)
+    if (deps.action=="add") {
+      deps.ui = HTML(renderDependencies(deps))
+      ui = tagList(deps.ui, ui)
+    } else {
+      #attr(ui,"knit_deps") <- deps
+    }
+    ui = attachDependencies(ui, deps)
+
+    attr(ui,"knit_meta") <- meta
+
+    return(ui)
+  } else if (out.type == "html") {
+    # simply add dependencies
+    # there may be a lot of redudancies in this approach
+    if (deps.action=="add") {
+      deps.html = renderDependencies(deps)
+      html = merge.lines(c(deps.html,html))
+    } else {
+      #attr(html,"knitr_deps") <- deps
+    }
+  }
+  attr(html,"knit_meta") <- meta
   html
 }
+
 
 #' Knits the rmd txt
 #'
@@ -53,8 +93,9 @@ knit.rmd = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE, 
     .GlobalEnv$knit_print.data.frame = table.knit_print.data.frame
   }
 
-  md = knitr::knit(text = text, envir = envir, encoding = encoding,
-        quiet = quiet)
+  md = knitr::knit(text = text, envir = envir, encoding = encoding, quiet = quiet)
+  #knitr:::.knitEnv$meta
+  #knit_meta(clean=FALSE)
 
   if (html.table) {
     if (!is.null(old.printer)) {

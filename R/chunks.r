@@ -195,4 +195,19 @@ eval.chunk.like.whisker = function(code, call=NULL, options=NULL, env=parent.fra
   do.call(whisker_print,c(list(x=val),options))
 }
 
+#' Create a Rmd chunk header line from a list of arguments
+#' @export
+args.to.chunk.header = function(args=list(), type="r", label=args$label) {
+  if (!is.null(label)) {
+    label = paste0('"',label,'", ')
+  } else {
+    label = ""
+  }
+  args = args[setdiff(names(args),"label")]
+  is.quoted = sapply(args, function(arg) is.character(arg))
+  quotes = ifelse(is.quoted,'"','')
+  head = paste0('```{',type,' ',label,paste0(names(args)," = ", quotes, args,quotes, collapse=", "),'}')
+  head
+}
+
 

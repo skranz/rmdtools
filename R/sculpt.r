@@ -9,6 +9,28 @@
 # tagList or shiny.tag -> return as.is
 #
 
+sculpt.chunk = function(text,...) {
+  knit.chunk(..., eval_mode="sculpt")
+}
+
+open.chunk.device = function(options) {
+  tmp.fig = tempfile(); on.exit(unlink(tmp.fig), add = TRUE)
+  # open a device to record plots
+  if (chunk_device(options$fig.width[1L], options$fig.height[1L], keep != 'none',
+                   options$dev, options$dev.args, options$dpi, options, tmp.fig)) {
+    # preserve par() settings from the last code chunk
+    if (keep.pars <- opts_knit$get('global.par'))
+      par2(opts_knit$get('global.pars'))
+    knitr:::showtext(options$fig.showtext)  # showtext support
+    dv = dev.cur()
+    on.exit({
+      if (keep.pars) opts_knit$set(global.pars = par(no.readonly = TRUE))
+      dev.off(dv)
+    }, add = TRUE)
+  }
+
+}
+
 sculpt.eval = function(code, expr=NULL, envir=parent.frame(), args=list(), out.type=c("keep", "shiny", "html")[1] , figure.dir=tempdir(), eval.fun = eval,...) {
   if (is.null(expr))
     expr = parse(text=code)

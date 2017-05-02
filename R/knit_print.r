@@ -61,10 +61,3 @@ format.data.frame = function(x, signif.digits=NULL, round.digits=NULL) {
   as.data.frame(lapply(x, format.vals, signif.digits=signif.digits, round.digits=round.digits))
 }
 
-
-rt_knit_print.htmlwidget = function (x, ..., options = NULL)
-{
-  restore.point("rt_knit_print.htmlwidget")
-  ui = toHTML(x, standalone = FALSE, knitrOptions = options)
-  knitr::knit_print(ui,options = options, ...)
-}

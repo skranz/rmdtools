@@ -102,18 +102,19 @@ knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE
 
 add.code.ui = function(ui = NULL, code, show_code)  {
   restore.point("add.code.ui")
+  id = paste0("codeBtn", random.string())
   code.ui = NULL
   empty.lines = which(cumsum(nchar(code))==0)
   if (length(empty.lines)>0) {
     code = code[-(1:max(empty.lines))]
-
+  }
   code.html = paste0('<pre><code class="r">',paste0(code, collapse="\n"),"\n</code></pre>",
 '\n<script class="remove_offline">,
 $("pre code.r").each(function(i, e) {hljs.highlightBlock(e)});
 </script>')
 
   if (show_code %in% c("note","open_note","note_after","open_note_after")) {
-    code.ui = hideShowButton("codeBtn","Code",content=HTML(code.html), show=str.starts.with(show_code,"open_"))
+    code.ui = hideShowButton(id,"Code",content=HTML(code.html), show=str.starts.with(show_code,"open_"))
     #code.ui = shinyEventsUI::slimCollapsePanel(title="code", HTML(code.html))
   } else if (show_code %in% c("before","after")) {
     code.ui = HTML(code.html)
@@ -205,19 +206,20 @@ render.rmd.in.temp = function(text, envir=parent.frame(), quiet=TRUE,...) {
 hideShowButton = function(id, label, content=NULL,div.id=NULL,shown=FALSE, ...) {
   restore.point("hideShowButton")
 
-  btn = smallButton(id,label)
+  btn = HTML(paste0('<button id="',id,'" style="" type="button" class="btn btn-default btn-xs no-shiny">',label,'</button>'))
 
   if (is.null(div.id))
     div.id = paste0(id,"-content-div")
 
   if (!is.null(content)) {
-    div = tags$div(id = div.id,style= ifelse(shown,"display: hidden", "display: none"), content)
+    div = tags$div(id = div.id,style= ifelse(shown,"display: block", "display: none"), content)
   } else {
     div = NULL
   }
   js = paste0(
 '$("#',id,'").on("click", function(event) {
-  $("#',div.id,'").toggle("show");
+  $("#',div.id,'").toggle("fast");
+  event.stopPropagation();
   });
 ')
   tagList(

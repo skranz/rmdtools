@@ -103,11 +103,14 @@ knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE
 add.code.ui = function(ui = NULL, code, show_code)  {
   restore.point("add.code.ui")
   code.ui = NULL
+  empty.lines = which(cumsum(nchar(code))==0)
+  if (length(empty.lines)>0) {
+    code = code[-(1:max(empty.lines))]
 
-  code.html = paste0('<pre><code class="r">\n', paste0(code, collapse="\n"),"\n</code></pre>",
-'<script class="remove_offline">,
+  code.html = paste0('<pre><code class="r">',paste0(code, collapse="\n"),"\n</code></pre>",
+'\n<script class="remove_offline">,
 $("pre code.r").each(function(i, e) {hljs.highlightBlock(e)});
-<script>')
+</script>')
 
   if (show_code %in% c("note","open_note","note_after","open_note_after")) {
     code.ui = hideShowButton("codeBtn","Code",content=HTML(code.html), show=str.starts.with(show_code,"open_"))

@@ -2,7 +2,7 @@
 #'
 #' Does not create /figure subfolder in current wd
 #' @export
-knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE, encoding = getOption("encoding"), html.table = TRUE, out.type="html", knit.dir=tempdir(), use.commonmark = TRUE, deps.action = c("add","ignore")[1], args=NULL, eval_mode=c("knit","sculpt","eval")[1], show_code=c("no","note","open_note", "note_after","open_note_after", "before","after")[1],  ...) {
+knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE, encoding = getOption("encoding"), html.table = TRUE, out.type="html", knit.dir=getwd(), use.commonmark = TRUE, deps.action = c("add","ignore")[1], args=NULL, eval_mode=c("knit","sculpt","eval")[1], show_code=c("no","note","open_note", "note_after","open_note_after", "before","after")[1], code.highlight=use.commonmark,  ...) {
   restore.point("knit.chunk")
 
   text = sep.lines(text)
@@ -66,6 +66,12 @@ knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE
   #writeClipboard(html)
   html = md2html(text=md, fragment.only=fragment.only, use.commonmark = use.commonmark)
 
+  # automatic code highlighting
+  if (code.highlight) {
+    html = paste0(html,'\n<script class="remove_offline">
+$("pre code.r, pre code.language-r").each(function(i, e) {hljs.highlightBlock(e)});
+</script>')
+  }
 
   is.dep = unlist(lapply(meta, function(el) is(el,"html_dependency")))
   deps = meta[is.dep]
@@ -83,7 +89,8 @@ knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE
 
     attr(ui,"knit_meta") <- meta
 
-    ui = add.code.ui(ui, code=org.code, show_code=show_code)
+    if (show_code != "no")
+      ui = add.code.ui(ui, code=org.code, show_code=show_code)
 
     return(ui)
   } else if (out.type == "html") {
@@ -100,6 +107,8 @@ knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE
   html
 }
 
+#' Add code button with div to an ui
+#' @export
 add.code.ui = function(ui = NULL, code, show_code)  {
   restore.point("add.code.ui")
   id = paste0("codeBtn", random.string())

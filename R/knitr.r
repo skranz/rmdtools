@@ -109,7 +109,7 @@ $("pre code.r, pre code.language-r").each(function(i, e) {hljs.highlightBlock(e)
 
 #' Add code button with div to an ui
 #' @export
-add.code.ui = function(ui = NULL, code, show_code)  {
+add.code.ui = function(ui = NULL, code, show_code, code.highlight=TRUE)  {
   restore.point("add.code.ui")
   id = paste0("codeBtn", random.string())
   code.ui = NULL
@@ -117,10 +117,15 @@ add.code.ui = function(ui = NULL, code, show_code)  {
   if (length(empty.lines)>0) {
     code = code[-(1:max(empty.lines))]
   }
-  code.html = paste0('<pre><code class="r">',paste0(code, collapse="\n"),"\n</code></pre>",
-'\n<script class="remove_offline">,
-$("pre code.r").each(function(i, e) {hljs.highlightBlock(e)});
-</script>')
+  code.html = paste0('<pre><code class="r">',paste0(code, collapse="\n"),"\n</code></pre>")
+  if (code.highlight) {
+    code.html = paste0(code.html,
+'\n<script class="remove_offline">
+$("pre code.r, pre code.language-r").each(function(i, e) {hljs.highlightBlock(e)});
+</script>'
+    )
+  }
+
 
   if (show_code %in% c("note","open_note","note_after","open_note_after")) {
     code.ui = hideShowButton(id,"Code",content=HTML(code.html), show=str.starts.with(show_code,"open_"))
@@ -226,7 +231,9 @@ hideShowButton = function(id, label, content=NULL,div.id=NULL,shown=FALSE, ...) 
     div = NULL
   }
   js = paste0(
-'$("#',id,'").on("click", function(event) {
+'// unbind previous events
+$(document).off("click","#',id,'");
+$(document).on("click","#',id,'", function(event) {
   $("#',div.id,'").toggle("fast");
   event.stopPropagation();
   });

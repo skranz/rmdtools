@@ -2,7 +2,7 @@
 #'
 #' Does not create /figure subfolder in current wd
 #' @export
-knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE, encoding = getOption("encoding"), html.table = TRUE, out.type="html", knit.dir=getwd(), use.commonmark = TRUE, deps.action = c("add","ignore")[1], args=NULL, eval_mode=c("knit","sculpt","eval")[1], show_code=c("no","note","open_note", "note_after","open_note_after", "before","after")[1], code.highlight=use.commonmark,  ...) {
+knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE, encoding = getOption("encoding"), html.table = TRUE, out.type="html", knit.dir=getwd(), use.commonmark = TRUE, deps.action = c("add","ignore")[1], args=NULL, eval_mode=c("knit","sculpt","eval")[1], show_code=c("no","note","open_note", "note_after","open_note_after", "before","after")[1], code.highlight=use.commonmark, ...) {
   restore.point("knit.chunk")
 
   text = sep.lines(text)
@@ -26,8 +26,14 @@ knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE
 
   if (is.null(args)) args = rmdtools::parse.chunk.args(text[1])
 
-  eval_mode = first.non.null(args$eval_mode,eval_mode,"knit")
-  show_code = first.non.null(args$show_code,show_code,"no")
+  # also use default options
+  #chunk_opts[names(args)] = args
+  #args = chunk_opts
+
+  chunk_opts = knitr::opts_chunk$get()
+  eval_mode = first.non.null(args$eval_mode,chunk_opts$eval_mode, eval_mode,"knit")
+  show_code = first.non.null(args$show_code,chunk_opts$show_code, show_code,"no")
+  centered = isTRUE(first.non.null(args$centered,chunk_opts$centered))
 
 
   code = org.code =  text[-unique(c(1, length(text)))]
@@ -50,7 +56,7 @@ knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE
 
   md = knitr::knit(text = text, envir = envir, encoding = "UTF8", quiet = quiet)
 
-  meta = knit_meta(clean=FALSE)
+  meta = unique(knit_meta(clean=TRUE))
 
   opts_knit$set(rmarkdown.pandoc.to=old.rmarkdown.pandoc.to)
 
@@ -75,22 +81,29 @@ $("pre code.r, pre code.language-r").each(function(i, e) {hljs.highlightBlock(e)
 
   is.dep = unlist(lapply(meta, function(el) is(el,"html_dependency")))
   deps = meta[is.dep]
+  is.head = unlist(lapply(meta, function(el) is(el,"shiny_head")))
 
 
   if (out.type == "shiny") {
     ui = HTML(html)
     if (deps.action=="add") {
       deps.ui = HTML(renderDependencies(deps))
-      ui = tagList(deps.ui, ui)
+      ui = tagList(deps.ui,meta[is.head], ui)
     } else {
       #attr(ui,"knit_deps") <- deps
     }
     ui = attachDependencies(ui, deps)
 
-    attr(ui,"knit_meta") <- meta
+    if (centered)
+      ui = tags$div(style="display: flex;
+  justify-content: center;", ui)
 
     if (show_code != "no")
       ui = add.code.ui(ui, code=org.code, show_code=show_code)
+
+
+
+    attr(ui,"knit_meta") <- meta
 
     return(ui)
   } else if (out.type == "html") {
@@ -98,7 +111,8 @@ $("pre code.r, pre code.language-r").each(function(i, e) {hljs.highlightBlock(e)
     # there may be a lot of redudancies in this approach
     if (deps.action=="add") {
       deps.html = renderDependencies(deps)
-      html = merge.lines(c(deps.html,html))
+      head.html = unlist(meta[is.head])
+      html = merge.lines(c(deps.html,head.html,html))
     } else {
       #attr(html,"knitr_deps") <- deps
     }

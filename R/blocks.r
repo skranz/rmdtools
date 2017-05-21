@@ -41,8 +41,9 @@ find.rmd.blocks = function(txt) {
   start = which(str.starts.with(txt,"#<"))
   end = which(str.starts.with(txt,"#>"))
 
-  if (length(start) != length(end)) {
-    stop(paste0("You open ", length(start), " blocks but close ", length(end), " blocks"))
+  res = unmatched.blocks.diagnostics(txt, start=start, end=end)
+  if (!res$ok) {
+    stop(res$msg)
   }
 
   if (length(start)==0) return(NULL)
@@ -67,6 +68,48 @@ find.rmd.blocks = function(txt) {
   }
 
   data.frame(start=start_row, end=end_row, type=type, arg.str=arg.str,stringsAsFactors = FALSE)
+}
+
+
+#' @export
+unmatched.blocks.diagnostics = function(txt, start = which(str.starts.with(txt,"#<")), end = which(str.starts.with(txt,"#>"))) {
+  restore.point("unmatched.blocks.diagnostics")
+
+  # first check if a block closes somewhere
+  # witihout blocks being open
+  n = min(length(start),length(end))
+  line = NULL
+  if (n > 0) {
+    prev.closed = which(end[1:n]<start[1:n])
+    if (length(prev.closed)>0) {
+      line = min(end[prev.closed])
+    }
+  }
+  if (!is.null(line)) {
+    msg = paste0("On line ", line, " you close a block while no block is open")
+    return(list(ok=FALSE, msg=msg, lines=line))
+  }
+
+  if (length(start)>length(end)) {
+    extra.end = length(txt)+1:(length(end)-length(start))
+    blocks = as_data_frame(match.blocks.start.end(start, c(end,extra.end)))
+
+    bi = blocks %>%
+      mutate(unclosed = end_ind > length(end)) %>%
+      filter(unclosed) %>%
+      mutate(start = start[start_ind], title=txt[start])
+
+    msg = paste0("You have the following unclosed block(s):\n", paste0("\n\tline ",bi$start, ": ", bi$title, collapse=""))
+    return(list(ok=FALSE, msg=msg, lines=start))
+  } else if (length(end)>length(start)) {
+    n = length(start)
+    lines = end[(n+1):length(end)]
+
+    msg = paste0("On the following line(s) you close a block while no block is open:\n", paste0(lines, collapse=", "))
+    return(list(ok=FALSE, msg=msg, lines=lines))
+  }
+
+  return(list(ok=TRUE,msg="",lines=NULL))
 }
 
 #' compile all given types of rmd blocks

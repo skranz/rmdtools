@@ -40,6 +40,8 @@ remove.rmd.chunks = function(rmd, chunk.names) {
   rmd
 }
 
+
+
 #' Find the start and end lines of all rmd chunks
 #'
 #' @param rmd the rmd code as character vector, one element per line

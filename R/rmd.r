@@ -59,7 +59,7 @@ view.rmd = function(file=NULL, text=readLines(file,warn = FALSE), envir=list(), 
     html = render.compiled.rmd(cr,envir=envir,fragment.only=FALSE, chunks=chunks)
     out.file <- tempfile(fileext = ".html")
     writeLines(html, out.file)
-    rstudio::viewer(out.file)
+    rstudioapi::viewer(out.file)
   }
   return(invisible())
 }

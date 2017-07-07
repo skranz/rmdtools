@@ -2,7 +2,7 @@
 #'
 #' Does not create /figure subfolder in current wd
 #' @export
-knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE, encoding = getOption("encoding"), html.table = TRUE, out.type="html", knit.dir=getwd(), use.commonmark = TRUE, deps.action = c("add","ignore")[1], args=NULL, eval_mode=c("knit","sculpt","eval")[1], show_code=c("no","note","open_note", "note_after","open_note_after", "before","after")[1], code.highlight=use.commonmark, ...) {
+knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE, encoding = getOption("encoding"), html.table = TRUE, out.type="html", knit.dir=getwd(), use.commonmark = TRUE, deps.action = c("add","ignore")[1], args=NULL, eval_mode=c("knit","sculpt","eval","html")[1], show_code=c("no","note","open_note", "note_after","open_note_after", "before","after")[1], code.highlight=use.commonmark, ...) {
   restore.point("knit.chunk")
 
   text = sep.lines(text)
@@ -53,24 +53,42 @@ knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE
     header = args.to.chunk.header(args)
     text = c(header, sep.lines(code),"```")
   }
-
-  md = knitr::knit(text = text, envir = envir, encoding = "UTF8", quiet = quiet)
-
-  meta = unique(knit_meta(clean=TRUE))
-
-  opts_knit$set(rmarkdown.pandoc.to=old.rmarkdown.pandoc.to)
-
-  if (html.table) {
-    if (!is.null(old.printer)) {
-      .GlobalEnv$knit_print.data.frame = old.printer
+  if (eval_mode == "html" | eval_mode == "eval") {
+    if (length(code)>0) {
+      html = eval(parse(text = code))
     } else {
-      suppressWarnings(rm("knit_print.data.frame",envir=.GlobalEnv))
+      html = ""
     }
-  }
-  if (out.type =="md" | out.type=="rmd") return(md)
+    meta = list()
+    if (out.type =="md" | out.type=="rmd") return(html)
 
-  #writeClipboard(html)
-  html = md2html(text=md, fragment.only=fragment.only, use.commonmark = use.commonmark)
+  } else {
+
+    md = knitr::knit(text = text, envir = envir, encoding = "UTF8", quiet = quiet)
+
+    meta = unique(knit_meta(clean=TRUE))
+
+    opts_knit$set(rmarkdown.pandoc.to=old.rmarkdown.pandoc.to)
+
+    if (html.table) {
+      if (!is.null(old.printer)) {
+        .GlobalEnv$knit_print.data.frame = old.printer
+      } else {
+        suppressWarnings(rm("knit_print.data.frame",envir=.GlobalEnv))
+      }
+    }
+    if (out.type =="md" | out.type=="rmd") return(md)
+
+    #writeClipboard(html)
+    if (eval_mode != "sculpt") {
+      html = md2html(text=md, fragment.only=fragment.only, use.commonmark = use.commonmark)
+    } else {
+      html = md
+    }
+
+  }
+
+
 
   # automatic code highlighting
   if (code.highlight) {

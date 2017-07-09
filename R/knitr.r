@@ -33,6 +33,8 @@ knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE
   chunk_opts = knitr::opts_chunk$get()
   eval_mode = first.non.null(args$eval_mode,chunk_opts$eval_mode, eval_mode,"knit")
   show_code = first.non.null(args$show_code,chunk_opts$show_code, show_code,"no")
+  print_remove_code_note = first.non.null(args$print_remove_code_note,chunk_opts$print_remove_code_note,TRUE)
+
   centered = isTRUE(first.non.null(args$centered,chunk_opts$centered))
 
 
@@ -80,6 +82,8 @@ knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE
     if (out.type =="md" | out.type=="rmd") return(md)
 
     #writeClipboard(html)
+    # a hack, we want to convert images and non sculpted chunks
+    #if (eval_mode != "sculpt" | has.substr(md,"![](figure/") ) {
     if (eval_mode != "sculpt") {
       html = md2html(text=md, fragment.only=fragment.only, use.commonmark = use.commonmark)
     } else {
@@ -117,7 +121,7 @@ $("pre code.r, pre code.language-r").each(function(i, e) {hljs.highlightBlock(e)
   justify-content: center;", ui)
 
     if (show_code != "no")
-      ui = add.code.ui(ui, code=org.code, show_code=show_code)
+      ui = add.code.ui(ui, code=org.code, show_code=show_code, print_remove_code_note = print_remove_code_note)
 
 
 
@@ -141,7 +145,7 @@ $("pre code.r, pre code.language-r").each(function(i, e) {hljs.highlightBlock(e)
 
 #' Add code button with div to an ui
 #' @export
-add.code.ui = function(ui = NULL, code, show_code, code.highlight=TRUE)  {
+add.code.ui = function(ui = NULL, code, show_code, code.highlight=TRUE, print_remove_code_note=TRUE)  {
   restore.point("add.code.ui")
   id = paste0("codeBtn", random.string())
   code.ui = NULL
@@ -160,7 +164,7 @@ $("pre code.r, pre code.language-r").each(function(i, e) {hljs.highlightBlock(e)
 
 
   if (show_code %in% c("note","open_note","note_after","open_note_after")) {
-    code.ui = hideShowButton(id,"Code",content=HTML(code.html), show=str.starts.with(show_code,"open_"))
+    code.ui = hideShowButton(id,"Code",div.class=paste0("chunk_code_note", if (print_remove_code_note) " remove_me"), content=HTML(code.html), show=str.starts.with(show_code,"open_"))
     #code.ui = shinyEventsUI::slimCollapsePanel(title="code", HTML(code.html))
   } else if (show_code %in% c("before","after")) {
     code.ui = HTML(code.html)
@@ -249,7 +253,7 @@ render.rmd.in.temp = function(text, envir=parent.frame(), quiet=TRUE,...) {
 #' A button that toogles whether content in a div
 #' is displayed or not
 #' @export
-hideShowButton = function(id, label, content=NULL,div.id=NULL,shown=FALSE, ...) {
+hideShowButton = function(id, label, content=NULL,div.id=NULL,shown=FALSE, div.class=NULL, ...) {
   restore.point("hideShowButton")
 
   btn = HTML(paste0('<button id="',id,'" style="" type="button" class="btn btn-default btn-xs no-shiny">',label,'</button>'))
@@ -258,7 +262,7 @@ hideShowButton = function(id, label, content=NULL,div.id=NULL,shown=FALSE, ...) 
     div.id = paste0(id,"-content-div")
 
   if (!is.null(content)) {
-    div = tags$div(id = div.id,style= ifelse(shown,"display: block", "display: none"), content)
+    div = tags$div(id = div.id,style= ifelse(shown,"display: block", "display: none"), class=div.class, content)
   } else {
     div = NULL
   }

@@ -83,8 +83,8 @@ knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE
 
     #writeClipboard(html)
     # a hack, we want to convert images and non sculpted chunks
-    #if (eval_mode != "sculpt" | has.substr(md,"![](figure/") ) {
-    if (eval_mode != "sculpt") {
+    if (eval_mode != "sculpt" | (has.substr(md,"![") & has.substr(md,"(figure/"))) {
+    #if (eval_mode != "sculpt") {
       html = md2html(text=md, fragment.only=fragment.only, use.commonmark = use.commonmark)
     } else {
       html = md

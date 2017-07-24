@@ -9,16 +9,18 @@ writeUtf8 <- function(x, file, bom=F) {
 
 #' Read a text file that was saved in UTF-8 format
 #' @export
-readUtf8 <- function(file) {
-  text <- readLines(file,encoding = "UTF-8")
+readUtf8 <- function(file,sep.lines=TRUE,warn=FALSE,...) {
+  text <- readLines(file,encoding = "UTF-8",warn=warn,...)
+  if (!sep.lines) text = paste0(text, collapse="\n")
   text
 }
 
 #' Read a text file and convert to UTF-8
 #' @export
-read.as.utf8 = function(file, sep.lines=TRUE) {
-  text <- readLines(file)
+read.as.utf8 = function(file, sep.lines=TRUE,warn=FALSE,...) {
+  text <- readLines(file,warn = warn,...)
   Encoding(text) <- "UTF-8"
+  if (!sep.lines) text = paste0(text, collapse="\n")
   text
 }
 

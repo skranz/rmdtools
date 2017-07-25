@@ -1,8 +1,13 @@
-#' Knits the rmd txt inside a temporary directory instead of the current wd
+#' Knits a single rmd knitr chunk
+#' Has several options. The output can be given as
+#' html, shiny tag or markdown
+#' eval_mode = "sculpt" shows shows the final output
+#' ommiting all intermediate results and messages
+#' deps.action ="add" adds back dependecies to html or shiny tag. Important for rendering shiny widgets
+#' deps.action ="relative" also changes absolute dependencies to relative dependencies based on a package. That is important if we want to save the generated shiny tag and use it as part of a shiny application on another computer.
 #'
-#' Does not create /figure subfolder in current wd
 #' @export
-knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE, encoding = getOption("encoding"), html.table = TRUE, out.type="html", knit.dir=getwd(), use.commonmark = TRUE, deps.action = c("add","ignore")[1], args=NULL, eval_mode=c("knit","sculpt","eval","html")[1], show_code=c("no","note","open_note", "note_after","open_note_after", "before","after")[1], code.highlight=use.commonmark, ...) {
+knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE, encoding = getOption("encoding"), html.table = TRUE, out.type=c("html","shiny")[1], knit.dir=getwd(), use.commonmark = TRUE, deps.action = c("add","relative","ignore")[1], args=NULL, eval_mode=c("knit","sculpt","eval","html")[1], show_code=c("no","note","open_note", "note_after","open_note_after", "before","after")[1], code.highlight=use.commonmark, add.meta.attr=TRUE, ...) {
   restore.point("knit.chunk")
 
   text = sep.lines(text)
@@ -109,12 +114,11 @@ $("pre code.r, pre code.language-r").each(function(i, e) {hljs.highlightBlock(e)
   if (out.type == "shiny") {
     ui = HTML(html)
     if (deps.action=="add") {
-      deps.ui = HTML(renderDependencies(deps))
-      ui = tagList(deps.ui,meta[is.head], ui)
-    } else {
-      #attr(ui,"knit_deps") <- deps
+      ui = attachDependencies(ui, deps)
+    } else if (deps.action=="relative") {
+      deps = makeDependenciesRelativeToPackage(deps)
+      ui = attachDependencies(ui, deps)
     }
-    ui = attachDependencies(ui, deps)
 
     if (centered)
       ui = tags$div(style="display: flex;
@@ -124,8 +128,8 @@ $("pre code.r, pre code.language-r").each(function(i, e) {hljs.highlightBlock(e)
       ui = add.code.ui(ui, code=org.code, show_code=show_code, print_remove_code_note = print_remove_code_note)
 
 
-
-    attr(ui,"knit_meta") <- meta
+    if (add.meta.attr)
+      attr(ui,"knit_meta") <- meta
 
     return(ui)
   } else if (out.type == "html") {
@@ -135,11 +139,12 @@ $("pre code.r, pre code.language-r").each(function(i, e) {hljs.highlightBlock(e)
       deps.html = renderDependencies(deps)
       head.html = unlist(meta[is.head])
       html = merge.lines(c(deps.html,head.html,html))
-    } else {
-      #attr(html,"knitr_deps") <- deps
+    } else if (deps.action=="relative") {
+      warning("Cannot make relative dependencies for out.type='html' in knit.chunk. Choose out.type='shiny' instead.")
     }
   }
-  attr(html,"knit_meta") <- meta
+  if (add.meta.attr)
+    attr(ui,"knit_meta") <- meta
   html
 }
 

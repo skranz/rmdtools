@@ -14,7 +14,7 @@ copy.non.null.fields = function(dest, source, fields=names(source)) {
 
 
 
-first.none.null = function(...) {
+first.none.null = first.non.null = function(...) {
   args = list(...)
   for (val in args) {
     if (!is.null(val)) return(val)

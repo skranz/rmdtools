@@ -7,7 +7,7 @@
 #' deps.action ="relative" also changes absolute dependencies to relative dependencies based on a package. That is important if we want to save the generated shiny tag and use it as part of a shiny application on another computer.
 #'
 #' @export
-knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE, encoding = getOption("encoding"), html.table = TRUE, out.type=c("html","shiny")[1], knit.dir=getwd(), use.commonmark = TRUE, deps.action = c("add","relative","ignore")[1], args=NULL, eval_mode=c("knit","sculpt","eval","html")[1], show_code=c("no","note","open_note", "note_after","open_note_after", "before","after")[1], code.highlight=use.commonmark, add.meta.attr=TRUE, ...) {
+knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE, encoding = getOption("encoding"), html.table = TRUE, out.type=c("html","shiny")[1], knit.dir=getwd(), use.commonmark = TRUE, deps.action = c("add","relative","ignore")[1], args=NULL, eval_mode=c("knit","sculpt","sculpt_asis", "eval","html")[1], show_code=c("no","note","open_note", "note_after","open_note_after", "before","after")[1], code.highlight=use.commonmark, add.meta.attr=TRUE, ...) {
   restore.point("knit.chunk")
 
   text = sep.lines(text)
@@ -45,7 +45,7 @@ knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE
 
   code = org.code =  text[-unique(c(1, length(text)))]
 
-  if (eval_mode == "sculpt") {
+  if (eval_mode == "sculpt" | eval_mode == "sculpt_asis") {
     # only show last line of code
     restore.point("sculpt.chunk")
     code = paste0('{
@@ -88,8 +88,7 @@ knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE
 
     #writeClipboard(html)
     # a hack, we want to convert images and non sculpted chunks
-    if (eval_mode != "sculpt" | (has.substr(md,"![") & has.substr(md,"(figure/"))) {
-    #if (eval_mode != "sculpt") {
+    if (eval_mode != "sculpt_asis") {
       html = md2html(text=md, fragment.only=fragment.only, use.commonmark = use.commonmark)
     } else {
       html = md

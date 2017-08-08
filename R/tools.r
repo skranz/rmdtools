@@ -1,4 +1,41 @@
 
+examples.fast_df = function() {
+
+library(microbenchmark)
+library(tibble)
+# simple vector and list
+x = 1:100
+y = as.list(1:100)
+microbenchmark(
+  #df1 = data.frame(x=x,y=y), # does not work correctly
+  df2 = data_frame(x=x,y=y),
+  df3 = tibble(x=x,y=y),
+  df4 = as_tibble(list(x=x,y=y)),
+  df5 = fast_df(x=x,y=y)
+)
+
+# two vectors
+x = 1:100
+y = 1:100
+microbenchmark(
+  df1 = data.frame(x=x,y=y),
+  df2 = data_frame(x=x,y=y),
+  df3 = tibble(x=x,y=y),
+  df4 = as_tibble(list(x=x,y=y)),
+  df5 = fast_df(x=x,y=y)
+)
+
+}
+
+#' Create a data_frame (tibble) considerably faster
+#'
+#' columns must all be named and cannot be computed from
+#' earlier columns
+fast_df = function(...) {
+  as_tibble(list(...),validate = FALSE)
+}
+
+
 copy.non.null.fields = function(dest, source, fields=names(source)) {
   restore.point("copy.into.empty.fields")
   copy.fields = fields[!sapply(source[fields], is.null)]

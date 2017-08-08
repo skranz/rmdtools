@@ -268,7 +268,7 @@ get.whiskers.with.type = function(text=paste0(readLines(file,warn = FALSE), coll
   rows = ! classes %in% c("name","character","numeric")
   classes[rows] = "call"
 
-  df = data_frame(start=pos$outer[,1], right=pos$outer[,2], str=str,call=calls, class=classes, block.start=block.start, block.end=block.end)
+  df = fast_df(start=pos$outer[,1], right=pos$outer[,2], str=str,call=calls, class=classes, block.start=block.start, block.end=block.end)
   df
 }
 

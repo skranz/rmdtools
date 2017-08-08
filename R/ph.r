@@ -127,7 +127,7 @@ rmd.chunks.to.placeholders = function(txt,whisker.prefix="{{", whisker.postfix="
     paste0(txt[df$start[row]:df$end[row]], collapse="\n")
   })
 
-  ph = data_frame(
+  ph = fast_df(
     id = id,
     type = "chunk",
     form = "chunk",
@@ -166,12 +166,13 @@ rmd.whiskers.to.placeholders = function(txt, whisker.prefix="{{", whisker.postfi
   }
   s = substring(txt, pos$inner[,1],pos$inner[,2])
   id = paste0("whisker_", seq_along(s),"_",random.string(length(s),nchar=12))
-  ph = data_frame(
+  info = lapply(s, make.whisker.info)
+  ph = fast_df(
     id = id,
     type = "whisker",
     form = "whisker",
     txt = s,
-    info = lapply(s, make.whisker.info),
+    info = info,
     #value.class = "",
     value = vector("list",NROW(id))
   )
@@ -207,7 +208,7 @@ rmd.blocks.to.placeholders = function(txt, block.df=NULL, whisker.prefix="{{", w
     return(list(txt=txt, ph=NULL))
   }
   id = paste0("block_", block.df$type,"_",block.df$start,"_",random.string(NROW(block.df)))
-  ph = data_frame(
+  ph = fast_df(
     id = id,
     type = block.df$type,
     form = "block",

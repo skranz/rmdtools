@@ -73,6 +73,6 @@ find.dot.blocks = function(txt,dot.levels = NULL, dot.start = "#. ") {
     end = c(start[-1]-1,NROW(txt))
   }
 
-  data.frame(start=start, end=end, type=type, arg.str = arg.str,stringsAsFactors = FALSE)
+  fast_df(start=start, end=end, type=type, arg.str = arg.str)
 
 }

@@ -33,7 +33,7 @@ get.default.block.spec = function(type) {
 
 #' Find all rmd blocks that start with a line `#< ...` and end with a line `#>`
 #' @param txt the rmd code, separated into lines
-#' @return A data.frame with the columns start, end, type, arg.str or NULL if no block was found
+#' @return A data_frame with the columns start, end, type, arg.str or NULL if no block was found
 #' @export
 find.rmd.blocks = function(txt) {
   restore.point("find.rmd.blocks")
@@ -67,7 +67,7 @@ find.rmd.blocks = function(txt) {
     stop(paste0("Could not parse types in the following lines:\n\n",msg))
   }
 
-  data.frame(start=start_row, end=end_row, type=type, arg.str=arg.str,stringsAsFactors = FALSE)
+  fast_df(start=start_row, end=end_row, type=type, arg.str=arg.str)
 }
 
 
@@ -224,7 +224,7 @@ replace.if.blocks = function(txt, envir=parent.frame(), call.list=NULL, block.df
   return(txt)
 }
 
-replace.if.blocks.from.if.df = function(txt, envir=parent.frame(), warn.if.na=TRUE, del.rows.na=FALSE, if.df=NULL,...) {
+replace.if.blocks.from.if.df = function(txt, envir=parent.frame(), warn.if.na=TRUE, del.rows.na=FALSE, if.df=NULL, add=if.df[["add"]],...) {
   restore.point("replace.if.blocks.from.if.df")
 
   if (NROW(if.df)==0) return(txt)
@@ -238,14 +238,16 @@ replace.if.blocks.from.if.df = function(txt, envir=parent.frame(), warn.if.na=TR
   rows = which(!is.na(start))
   if (NROW(rows)==0) return(txt)
 
-  add = sapply(rows, function(row) {
-    restore.point("replace.if.blocks.add")
-    call = if.df$info[[row]]$cond.call
-    res = (try(eval(call,envir=envir)))
-    if ( warn.if.na & !is.logical(res))
-      warning("Could not evaluate condition ", if.df$info[[row]]$cond.str, " to TRUE or FALSE.")
-    isTRUE(res)
-  })
+  if (is.null(add)) {
+    add = sapply(rows, function(row) {
+      restore.point("replace.if.blocks.add")
+      call = if.df$info[[row]]$cond.call
+      res = (try(eval(call,envir=envir)))
+      if ( warn.if.na & !is.logical(res))
+        warning("Could not evaluate condition ", if.df$info[[row]]$cond.str, " to TRUE or FALSE.")
+      isTRUE(res)
+    })
+  }
 
   del.rows = unique(unlist(lapply(which(!add),function(ind){
     start[rows[ind]]:end[rows[ind]]
@@ -468,7 +470,7 @@ adapt.hf.blocks = function(txt, block.df=NULL, out.type="html",only.types=c("if"
   head = paste0("<!-- _START_",id," ", block.df$arg.str, " -->")
   foot = paste0("<!-- _END_",id, " -->")
 
-  hf = data_frame(
+  hf = fast_df(
     id = id,
     type = block.df$type,
     head = head,

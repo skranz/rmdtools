@@ -35,7 +35,7 @@ split.by.line.start = split.text.in.startline.blocks = function(txt, start.with 
     } else {
       inner = txt
     }
-    return(data_frame(start=1, end = length(txt), head="", inner=inner))
+    return(fast_df(start=1, end = length(txt), head="", inner=inner))
   }
 
   start = block.lines
@@ -67,5 +67,5 @@ split.by.line.start = split.text.in.startline.blocks = function(txt, start.with 
       }
     }
   }
-  data_frame(start=start,end=end, head=head, inner=inner)
+  fast_df(start=start,end=end, head=head, inner=inner)
 }

@@ -54,7 +54,7 @@ find.rmd.chunks = function(rmd, add.code = FALSE) {
   chunk.end = internal.remove.verbatim.end.chunks(chunk.start,chunk.end)
 
   names = parse.chunk.names(rmd[chunk.start])
-  df = data.frame(chunk.name=names,start=chunk.start, end=chunk.end)
+  df = fast_df(chunk.name=names,start=chunk.start, end=chunk.end)
   if (add.code) {
     df$code = sapply(seq_len(NROW(df)), function(r) {
       paste0(rmd[(df$start[r]+1):(df$end[r]-1)], collapse="\n")
@@ -67,13 +67,14 @@ find.rmd.chunks = function(rmd, add.code = FALSE) {
 
 internal.remove.verbatim.end.chunks = function(chunk.start, chunk.end) {
   restore.point("remove.verbatim.end.chunks")
-  df = data.frame(ind =c(0, seq_along(chunk.start), seq_along(chunk.end)),
-                  row=c(0, chunk.start,chunk.end),
-                  type=c("f",
-                         rep("s",length(chunk.start)),
-                         rep("e",length(chunk.end))
-                       )
-                  )
+  df = fast_df(
+    ind =c(0, seq_along(chunk.start), seq_along(chunk.end)),
+    row=c(0, chunk.start,chunk.end),
+    type=c("f",
+           rep("s",length(chunk.start)),
+           rep("e",length(chunk.end))
+         )
+  )
   df = arrange(df,row)
   df$del =  df$type == "e" & !is.true(lag(df$type) == "s")
 

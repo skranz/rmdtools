@@ -353,6 +353,10 @@ paste.whiskers = function(str,values=parent.frame(), eval=TRUE, signif.digits=NU
 
 	start.whisker = str.starts.with(str,"{{")
 
+	# we have no whisker
+	if (length(sv)==1 & !start.whisker)
+	  return(str)
+
 	whisker.pos = seq(1+!start.whisker,length(sv),by=2)
 
 	s = sv[whisker.pos]

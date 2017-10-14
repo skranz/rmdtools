@@ -18,7 +18,7 @@ c={{c}}
 
 }
 
-render.vectorized.compiled.rmd = function(cr,df,enclos=parent.frame()) {
+render.vectorized.compiled.rmd = function(cr,df=list(),enclos=parent.frame()) {
   restore.point("render.vectorized.compiled.rmd")
 
 

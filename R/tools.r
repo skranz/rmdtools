@@ -262,7 +262,7 @@ random.string.collusion.prob = function(n=1000,nchar=14) {
 #' Create n random strings of length nchar each
 #' @export
 random.string = function(n=1,nchar=14) {
-  chars = sample(c(letters,LETTERS,0:9),nchar*n, replace = TRUE)
+  chars = sample(c(letters,LETTERS),nchar*n, replace = TRUE)
   if (n == 1) return(paste0(chars, collapse=""))
   mat = as.data.frame(matrix(chars, n, nchar))
   do.call(paste0,mat)

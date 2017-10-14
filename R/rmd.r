@@ -250,7 +250,11 @@ render.compiled.rmd = function(cr=NULL,txt = cr$body,envir=parent.frame(), fragm
 
   # Let us search for all placeholders
   phs = cr$ph$id
-  ph.loc = str.locate.all(txt, pattern=phs,fixed = TRUE)
+  if (length(phs)>0) {
+    ph.loc = str.locate.all(txt, pattern=phs,fixed = TRUE)
+  } else {
+    ph.loc = NULL
+  }
 
   if (length(ph.loc)>0) {
     has.ph = sapply(ph.loc, function(loc) NROW(loc)>0)
@@ -271,6 +275,8 @@ render.compiled.rmd = function(cr=NULL,txt = cr$body,envir=parent.frame(), fragm
     })
     cr$ph$value[comp.val] = new.values
     #cr$ph$value.class[comp.val] = sapply(new.values, function(val) attr(val, "value.class"))
+  } else {
+    has.ph = rep(FALSE, NROW(cr$ph))
   }
 
   restore.point("jdkbfuifuriufbb")
@@ -278,7 +284,11 @@ render.compiled.rmd = function(cr=NULL,txt = cr$body,envir=parent.frame(), fragm
   # render atomic whiskers directly into text
   # otherwise too many newlines and paragraphs will
   # be entered
-  rows = which(cr$ph$type == "whisker" & sapply(cr$ph$value, is.atomic))
+  if (NROW(cr$ph$type)>0) {
+    rows = which(cr$ph$type == "whisker" & sapply(cr$ph$value, is.atomic))
+  } else {
+    rows = NULL
+  }
   if (length(rows)>0) {
     li = cr$ph$value[rows]
     names(li) = cr$ph$id[rows]

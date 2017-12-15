@@ -15,10 +15,13 @@ html.table = function(df, sel.row=NULL, col.names=TRUE, row.names=FALSE, border=
     row.bgcolor[sel.row]='#00ff00'
   }
 
-  if (col.names) {
+  if (is.character(col.names)) {
+    colnames = col.names
+    col.names = TRUE
+  } else if (isTRUE(col.names)) {
     colnames = colnames(df)
-
-
+  }
+  if (col.names) {
     if (is.null(col.tooltips)) {
       inner = colnames
     } else {

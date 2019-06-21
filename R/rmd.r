@@ -14,7 +14,7 @@ examples.compile.rmd = function() {
   view.html(ui = ui)
   view.html(text=html)
 
-  view.rmd(ui=rmd)
+  view.rmd(rmd)
 
   txt
   ui = render.compiled.rmd(cr,envir = list(x=15), out.type = "shiny")

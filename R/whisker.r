@@ -114,6 +114,7 @@ replace.whiskers = function(str, values=parent.frame(), eval=TRUE, signif.digits
     }
     vals = sapply(values[s], function(val) {
      if (vector.return.first) {
+        if (length(val)==0) return("<EMPTY>")
         if(use.print == "none")
           return(unlist(val)[[1]])
         return(val[[1]])

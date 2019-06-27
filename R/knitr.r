@@ -7,7 +7,7 @@
 #' deps.action ="relative" also changes absolute dependencies to relative dependencies based on a package. That is important if we want to save the generated shiny tag and use it as part of a shiny application on another computer.
 #'
 #' @export
-knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE, encoding = getOption("encoding"), html.table = TRUE, out.type=c("html","shiny")[1], knit.dir=getwd(), use.commonmark = TRUE, deps.action = c("add","relative","ignore")[1], args=NULL, eval_mode=c("knit","sculpt","sculpt_asis", "eval","html")[1], show_code=c("no","note","open_note", "note_after","open_note_after", "before","after")[1], code.highlight=use.commonmark, add.meta.attr=TRUE, ...) {
+knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE, encoding = getOption("encoding"), html.table = TRUE, out.type=c("html","shiny")[1], knit.dir=getwd(), use.commonmark = TRUE, deps.action = c("add","relative","ignore")[1], args=NULL, eval_mode=c("knit","sculpt","sculpt_asis", "eval","html")[1], show_code=c("no","note","open_note", "note_after","open_note_after", "before","after")[1], code.highlight=use.commonmark, add.meta.attr=TRUE, remove.empty.html.comments=TRUE, ...) {
   restore.point("knit.chunk")
 
   text = sep.lines(text)
@@ -72,6 +72,9 @@ knit.chunk = function(text, envir=parent.frame(), fragment.only=TRUE, quiet=TRUE
   } else {
 
     md = knitr::knit(text = text, envir = envir, encoding = "UTF8", quiet = quiet)
+
+    if (remove.empty.html.comments)
+      md = gsub("<!-- -->","",md, fixed=TRUE)
 
     meta = unique(knit_meta(clean=TRUE))
 

@@ -43,7 +43,7 @@ find.rmd.nested = function(txt, dot.levels = NULL) {
 #' #. type arguments
 #'
 #' @export
-find.dot.blocks = function(txt,dot.levels = NULL, dot.start = "#. ") {
+find.dot.blocks = function(txt,dot.levels = NULL, dot.start = "#. ", single.line.level=Inf) {
   restore.point("find.dot.blocks")
 
   rows = str.starts.with(txt, dot.start)
@@ -72,6 +72,9 @@ find.dot.blocks = function(txt,dot.levels = NULL, dot.start = "#. ") {
   } else {
     end = c(start[-1]-1,NROW(txt))
   }
+  single.rows = which(dot.levels[type] == Inf)
+  if (length(single.rows)>0)
+    end[single.rows] = start[single.rows]
 
   fast_df(start=start, end=end, type=type, arg.str = arg.str)
 

@@ -214,7 +214,7 @@ rmd.blocks.to.placeholders = function(txt, block.df=NULL, whisker.prefix="{{", w
     form = "block",
     txt = get.blocks.txt(txt, block.df, inner=FALSE),
     #value.class = "",
-    value = vector("list",NROW(df))
+    value = vector("list",NROW(block.df))
   )
   ph$info = lapply(1:NROW(ph), function(row) {
     make.block.info(txt = ph$txt[row],type=ph$type[row])

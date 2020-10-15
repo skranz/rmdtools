@@ -18,6 +18,14 @@ examples.nested = function() {
   d = cbind(df,pt)
 }
 
+mutate_ = function(.data=NULL,...) {
+  if (is.null(.data)) return(NULL)
+  dplyr::mutate_(.data, ...)
+}
+
+mutate.NULL = select.NULL = arrange.NULL = filter.NULL = function(...) NULL
+
+
 mutate_.NULL = select_.NULL = arrange_.NULL = filter_.NULL = function(...) NULL
 
 #' find blocks, chunks and dot blocks and add nesting info
